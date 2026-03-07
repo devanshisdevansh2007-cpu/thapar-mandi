@@ -1,0 +1,220 @@
+Build a complete full-stack web application called **"Thapar Mandi"**, a campus marketplace for Thapar University students to buy and sell items.
+
+TECH STACK
+
+* Backend: Node.js with Express
+* Frontend: HTML, CSS, JavaScript
+* Database: SQLite
+* The project must run with:
+  npm install
+  node server.js
+* Server should run on port 3000.
+
+GENERAL UI DESIGN
+Create a modern, clean marketplace UI similar to the Rumie style.
+
+Color palette:
+
+* Background: #F5D6BA
+* Cards / boxes: #F49D6E
+* Use slightly lighter/darker shades of these colors for hover states
+* Rounded corners
+* Soft shadows
+* Simple modern layout
+* Mobile responsive
+
+APP NAME
+Thapar Mandi
+
+Tagline:
+“Buy and sell within Thapar campus.”
+
+LANDING PAGE (/)
+Display:
+
+* App name
+* Tagline
+* Buttons:
+  Login
+  Sign Up
+  Browse Marketplace
+
+Also show a small preview grid of marketplace items.
+
+USER AUTHENTICATION
+
+SIGNUP PAGE (/signup)
+
+Fields:
+
+* Name
+* Thapar Email
+* Phone Number
+* Password
+* Confirm Password
+
+Rules:
+
+* Email must end with **@thapar.edu**
+* Phone number must be exactly **10 digits**
+* Store phone number in database
+* Hash passwords before saving
+* Show proper error messages
+
+After successful signup:
+
+* Automatically log the user in
+* Redirect them to **/dashboard**
+
+LOGIN PAGE (/login)
+
+Fields:
+
+* Email
+* Password
+
+If login is successful:
+Return success and **redirect the user to /dashboard**.
+
+Important:
+Fix the bug where login succeeds but the page does not redirect.
+
+After successful login the frontend must run:
+
+window.location.href = "/dashboard";
+
+USER DASHBOARD (/dashboard)
+
+After login show:
+
+Welcome message with user name.
+
+Buttons:
+
+* Browse Marketplace
+* Sell Item
+* My Listings
+* Logout
+
+If a user is not logged in and tries to access dashboard, redirect them to /login.
+
+MARKETPLACE PAGE (/marketplace)
+
+Display items in a grid layout.
+
+Each item card should show:
+
+* Item image
+* Title
+* Price
+* Seller name
+* View Details button
+
+Add a **search bar** to search items.
+
+SELL ITEM PAGE (/sell)
+
+Form fields:
+
+* Item title
+* Description
+* Price
+* Category
+* Upload image
+
+Button:
+Post Item
+
+After posting, redirect to marketplace and show the item.
+
+ITEM DETAILS PAGE (/item/:id)
+
+Show:
+
+* Large item image
+* Title
+* Price
+* Description
+* Seller name
+* Contact Seller button
+
+CONTACT SELLER FEATURE
+
+When the user clicks **Contact Seller**:
+
+Reveal the seller's phone number in a card.
+
+Example:
+
+Seller Phone: +91 XXXXX XXXXX
+
+Add a **Copy Number button**.
+
+When clicked:
+Copy the phone number to clipboard using:
+
+navigator.clipboard.writeText(phoneNumber)
+
+Show message:
+“Phone number copied!”
+
+Do NOT open the phone dialer automatically.
+
+MY LISTINGS PAGE (/my-listings)
+
+Users can see all items they posted.
+
+Options:
+
+* Edit item
+* Delete item
+
+DATABASE TABLES
+
+Users table:
+
+* id
+* name
+* email
+* phone_number
+* password
+
+Items table:
+
+* id
+* title
+* description
+* price
+* image
+* seller_id
+
+NAVIGATION BAR
+
+Top navbar with:
+
+* Thapar Mandi logo
+* Marketplace
+* Sell Item
+* My Listings
+* Logout
+
+AUTHENTICATION RULES
+
+If user is logged in:
+
+* Prevent access to /login and /signup
+* Redirect them to /dashboard.
+
+If user is not logged in:
+
+* Redirect protected pages to /login.
+
+FINAL REQUIREMENTS
+
+* Login must correctly redirect to /dashboard.
+* Signup must create user and redirect to /dashboard.
+* Posting items must work.
+* Marketplace must display listings.
+* Contact Seller must reveal phone number and allow copying.
+* The project should run immediately after npm install and node server.js.
+* Provide a clear folder structure and instructions to run the app locally.
