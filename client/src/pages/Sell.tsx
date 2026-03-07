@@ -32,8 +32,8 @@ export function Sell() {
 
   const compressImage = async (file: File) => {
     const options = {
-      maxSizeMB: 0.4,
-      maxWidthOrHeight: 900,
+      maxSizeMB: 0.15,
+      maxWidthOrHeight: 700,
       useWebWorker: true,
     };
 
@@ -163,7 +163,11 @@ export function Sell() {
                       const file = e.target.files?.[0];
                       if (!file) return;
 
+                      console.log("Original size:", file.size);
+
                       const compressed = await compressImage(file);
+
+                      console.log("Compressed size:", compressed.size);
 
                       const reader = new FileReader();
                       reader.onloadend = () => {
