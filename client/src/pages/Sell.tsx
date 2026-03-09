@@ -22,6 +22,7 @@ const CATEGORIES = [
   "Vehicles",
   "Furniture",
   "Stationery",
+  "Food",
   "Other",
 ];
 
