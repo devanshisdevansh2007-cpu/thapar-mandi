@@ -13,18 +13,8 @@ const pool = new Pool({
 
 const app = express();
 const httpServer = createServer(app);
-const app = express();
-const httpServer = createServer(app);
 
-app.get("/api/test-db", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database connection failed" });
-  }
-});
+
 
 declare module "http" {
   interface IncomingMessage {
