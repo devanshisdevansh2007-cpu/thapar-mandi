@@ -28,10 +28,17 @@ export function Auth({ isLogin = true }: { isLogin?: boolean }) {
     defaultValues: { email: "", password: "" }
   });
 
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", phoneNumber: "", password: "", confirmPassword: "" }
-  });
+const registerForm = useForm<z.infer<typeof registerSchema>>({
+  resolver: zodResolver(registerSchema),
+  defaultValues: { 
+    name: "", 
+    email: "", 
+    phoneNumber: "", 
+    hostel: "", 
+    password: "", 
+    confirmPassword: "" 
+  }
+});
 
   const onLogin = async (data: z.infer<typeof loginSchema>) => {
     try {
@@ -146,18 +153,53 @@ export function Auth({ isLogin = true }: { isLogin?: boolean }) {
                   <p className="text-destructive text-sm font-medium pl-1">{registerForm.formState.errors.email.message}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground pl-1">Phone Number</label>
-                <input 
-                  type="tel" 
-                  className="w-full glass-input px-4 py-3 rounded-xl outline-none"
-                  placeholder="9876543210"
-                  {...registerForm.register("phoneNumber")}
-                />
-                {registerForm.formState.errors.phoneNumber && (
-                  <p className="text-destructive text-sm font-medium pl-1">{registerForm.formState.errors.phoneNumber.message}</p>
-                )}
-              </div>
+             <div className="space-y-2">
+  <label className="text-sm font-bold text-foreground pl-1">Phone Number</label>
+  <input 
+    type="tel" 
+    className="w-full glass-input px-4 py-3 rounded-xl outline-none"
+    placeholder="9876543210"
+    {...registerForm.register("phoneNumber")}
+  />
+  {registerForm.formState.errors.phoneNumber && (
+    <p className="text-destructive text-sm font-medium pl-1">
+      {registerForm.formState.errors.phoneNumber.message}
+    </p>
+  )}
+</div>
+
+<div className="space-y-2">
+  <label className="text-sm font-bold text-foreground pl-1">Hostel</label>
+
+  <select
+    className="w-full glass-input px-4 py-3 rounded-xl outline-none"
+    {...registerForm.register("hostel")}
+  >
+    <option value="">Select Hostel</option>
+    <option value="M">M</option>
+    <option value="J">J</option>
+    <option value="H">H</option>
+    <option value="K">K</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
+    <option value="O">O</option>
+    <option value="Q">Q</option>
+    <option value="G">G</option>
+    <option value="I">I</option>
+    <option value="E">E</option>
+    <option value="N">N</option>
+    <option value="FRG">FRG</option>
+    <option value="FRF">FRF</option>
+  </select>
+
+  {registerForm.formState.errors.hostel && (
+    <p className="text-destructive text-sm font-medium pl-1">
+      {registerForm.formState.errors.hostel.message}
+    </p>
+  )}
+</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-foreground pl-1">Password</label>
