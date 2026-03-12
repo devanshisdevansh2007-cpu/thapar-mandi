@@ -1,0 +1,12 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K⠙[1G[0K5:25:35 AM [express] serving on port 5000
+5:25:42 AM [express] GET /api/user 401 in 3ms :: {"message":"Unauthorized"}
+Internal Server Error: TypeError: Cannot destructure property 'password' of 'seller' as it is undefined.
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:87:17[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at async Promise.all (index 0)
+    at async <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:84:30[90m)[39m
+5:25:42 AM [express] GET /api/items 500 in 19ms :: {"message":"Cannot destructure property 'password' of 'seller' as it is undefined."}
