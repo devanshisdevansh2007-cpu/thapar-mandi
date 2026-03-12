@@ -18,7 +18,7 @@ export const items = pgTable("items", {
   price: integer("price").notNull(),
   category: text("category").notNull(),
   image: text("image").notNull(),
-  sellerId: integer("seller_id").notNull(),
+  sellerId: uuid("seller_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
