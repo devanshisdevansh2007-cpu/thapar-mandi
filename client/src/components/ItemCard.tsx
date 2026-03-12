@@ -11,7 +11,26 @@ export function ItemCard({ item }: { item: Item }) {
     currency: 'INR',
     maximumFractionDigits: 0
   }).format(item.price);
+const getTimeAgo = (date: string) => {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
 
+  const intervals: Record<string, number> = {
+    year: 31536000,
+    month: 2592000,
+    day: 86400,
+    hour: 3600,
+    minute: 60
+  };
+
+  for (const key in intervals) {
+    const interval = Math.floor(seconds / intervals[key]);
+    if (interval >= 1) {
+      return `${interval} ${key}${interval > 1 ? "s" : ""} ago`;
+    }
+  }
+
+  return "just now";
+};
   return (
     <Link href={`/item/${item.id}`} className="group block h-full">
       <div className="h-full glass-card overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
@@ -36,14 +55,26 @@ export function ItemCard({ item }: { item: Item }) {
           <p className="text-foreground/70 text-sm line-clamp-2 mb-4 flex-1">
             {item.description}
           </p>
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/20">
-            <span className="font-display font-extrabold text-xl text-primary">
-              {formattedPrice}
-            </span>
-            <span className="text-xs font-medium text-foreground/60 bg-white/30 px-2 py-1 rounded-md">
-              {item.seller ? item.seller.name.split(' ')[0] : 'Seller'}
-            </span>
-          </div>
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/20">
+  <span className="font-display font-extrabold text-xl text-primary">
+    {formattedPrice}
+  </span>
+
+  <div className="text-right text-xs text-foreground/70">
+    <div className="font-medium">
+      {item.seller ? item.seller.name.split(" ")[0] : "Seller"}
+    </div>
+
+    {item.seller?.hostel && (
+    <div className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block">
+  Hostel {item.seller.hostel}
+</div>
+    )}
+    <div className="text-[10px] text-foreground/60 mt-1">
+  Added {getTimeAgo(item.createdAt)}
+</div>
+  </div>
+</div>
         </div>
       </div>
     </Link>
