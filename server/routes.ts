@@ -5,13 +5,22 @@ import { api } from "@shared/routes";
 import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
 import { z } from "zod";
+import { pool } from "./db";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
 ): Promise<Server> {
   setupAuth(app);
-
+app.get("/api/test-db", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
   app.post(api.auth.signup.path, async (req, res) => {
     try {
       const input = api.auth.signup.input.parse(req.body);
