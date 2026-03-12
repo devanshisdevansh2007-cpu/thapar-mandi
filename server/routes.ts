@@ -18,7 +18,7 @@ app.get("/api/test-db", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Database connection failed" });
+    res.status(500).json({ error: String(err) });
   }
 });
   app.post(api.auth.signup.path, async (req, res) => {
