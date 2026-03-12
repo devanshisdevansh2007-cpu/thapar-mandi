@@ -21,6 +21,23 @@ app.get("/api/test-db", async (req, res) => {
     res.status(500).json({ error: String(err) });
   }
 });
+  app.put("/api/user/hostel", async (req, res) => {
+  if (!req.isAuthenticated())
+    return res.status(401).json({ message: "Unauthorized" });
+
+  const { hostel } = req.body;
+
+  if (!hostel)
+    return res.status(400).json({ message: "Hostel is required" });
+
+  const updatedUser = await storage.updateUser(req.user!.id, { hostel });
+
+if (!updatedUser) {
+  return res.status(404).json({ message: "User not found" });
+}
+  const { password, ...userWithoutPassword } = updatedUser!;
+  res.json(userWithoutPassword);
+});
   app.post(api.auth.signup.path, async (req, res) => {
     try {
       const input = api.auth.signup.input.parse(req.body);
