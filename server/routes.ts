@@ -119,23 +119,26 @@ app.get("/api/test-db", async (req, res) => {
   });
 
   app.post(api.items.create.path, async (req, res) => {
-    if (!req.isAuthenticated())
-      return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated())
+    return res.status(401).json({ message: "Unauthorized" });
 
-    try {
-      const input = api.items.create.input.parse(req.body);
-      const item = await storage.createItem({
-        ...input,
-        sellerId: req.user!.id,
-      });
-      res.status(201).json(item);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message });
-      }
-      res.status(500).json({ message: "Internal server error" });
+  try {
+    const input = api.items.create.input.parse(req.body);
+    const item = await storage.createItem({
+      ...input,
+      sellerId: req.user!.id,
+    });
+    res.status(201).json(item);
+  } catch (err) {
+    console.error("CREATE ITEM ERROR:", err);
+
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
     }
-  });
+
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
   app.put(api.items.update.path, async (req, res) => {
     if (!req.isAuthenticated())
