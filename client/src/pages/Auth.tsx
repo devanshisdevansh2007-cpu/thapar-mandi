@@ -28,11 +28,35 @@ export function Auth({ isLogin = true }: { isLogin?: boolean }) {
     defaultValues: { email: "", password: "" }
   });
 
+async function sendOTP(email: string) {
+  await fetch("/api/send-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+}
+
+async function verifyOTP(email: string, otp: string) {
+  const res = await fetch("/api/verify-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, otp }),
+  });
+
+  const data = await res.json();
+  return data.verified;
+}
+
 const registerForm = useForm<z.infer<typeof registerSchema>>({
   resolver: zodResolver(registerSchema),
   defaultValues: { 
     name: "", 
     email: "", 
+    otp: "",
     phoneNumber: "", 
     hostel: "", 
     password: "", 
@@ -133,6 +157,7 @@ const registerForm = useForm<z.infer<typeof registerSchema>>({
                 <label className="text-sm font-bold text-foreground pl-1">Full Name</label>
                 <input 
                   type="text" 
+                  maxLength={6}
                   className="w-full glass-input px-4 py-3 rounded-xl outline-none"
                   placeholder="John Doe"
                   {...registerForm.register("name")}
@@ -145,6 +170,7 @@ const registerForm = useForm<z.infer<typeof registerSchema>>({
                 <label className="text-sm font-bold text-foreground pl-1">Thapar Email</label>
                 <input 
                   type="email" 
+                  
                   className="w-full glass-input px-4 py-3 rounded-xl outline-none"
                   placeholder="jdoe_be21@thapar.edu"
                   {...registerForm.register("email")}
@@ -153,6 +179,47 @@ const registerForm = useForm<z.infer<typeof registerSchema>>({
                   <p className="text-destructive text-sm font-medium pl-1">{registerForm.formState.errors.email.message}</p>
                 )}
               </div>
+              {/* OTP FIELD */}
+<div className="space-y-2">
+  <label className="text-sm font-bold text-foreground pl-1">OTP</label>
+
+  <div className="flex gap-2">
+    <input
+      type="text"
+      className="w-full glass-input px-4 py-3 rounded-xl outline-none"
+      placeholder="Enter OTP"
+      {...registerForm.register("otp")}
+    />
+
+    <button
+  type="button"
+  disabled={!registerForm.watch("email")}
+  onClick={() => {
+    const email = registerForm.getValues("email");
+
+    if (!email) {
+      toast({
+        title: "Enter email first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    sendOTP(email);
+    toast({ title: "OTP sent to your email" });
+  }}
+  className="px-4 bg-primary text-primary-foreground rounded-xl font-bold disabled:opacity-50"
+>
+  Send OTP
+</button>
+  </div>
+
+  {registerForm.formState.errors.otp && (
+    <p className="text-destructive text-sm font-medium pl-1">
+      {registerForm.formState.errors.otp.message}
+    </p>
+  )}
+</div>
              <div className="space-y-2">
   <label className="text-sm font-bold text-foreground pl-1">Phone Number</label>
   <input 

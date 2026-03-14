@@ -14,13 +14,15 @@ export const api = {
       method: 'POST' as const,
       path: '/api/register' as const,
       input: insertUserSchema.extend({
-        email: z.string().email().refine(e => e.endsWith('@thapar.edu'), "Email must end with @thapar.edu"),
-        phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
-        confirmPassword: z.string()
-      }).refine(data => data.password === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ["confirmPassword"]
-      }),
+  email: z.string().email().refine(e => e.endsWith('@thapar.edu'), "Email must end with @thapar.edu"),
+  phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  confirmPassword: z.string()
+})
+.refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"]
+}),
       responses: {
         201: z.custom<Omit<typeof users.$inferSelect, 'password'>>(),
         400: errorSchemas.validation,

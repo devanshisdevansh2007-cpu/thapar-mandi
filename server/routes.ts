@@ -6,7 +6,9 @@ import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
 import { z } from "zod";
 import { pool } from "./db";
-
+import { generateOTP } from "./otp";
+import { sendOTPEmail } from "./email";
+import { saveOTP, verifyOTP } from "./otpStore";
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
@@ -40,8 +42,14 @@ if (!updatedUser) {
 });
   app.post(api.auth.signup.path, async (req, res) => {
     try {
-      const input = api.auth.signup.input.parse(req.body);
+      const { otp, ...rest } = req.body;
+const input = api.auth.signup.input.parse(rest);
 
+    const valid = verifyOTP(input.email, otp);
+
+    if (!valid) {
+      return res.status(400).json({ message: "Email not verified" });
+    }
       const existingUser = await storage.getUserByEmail(input.email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already exists" });
@@ -82,6 +90,39 @@ if (!updatedUser) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+app.post("/api/send-otp", async (req, res) => {
+   console.log("OTP route hit");
+  const { email } = req.body;
+    if (!email.endsWith("@thapar.edu")) {
+    return res.status(400).json({ message: "Use your Thapar email" });
+  }
+  const otp = generateOTP();
+
+  saveOTP(email, otp);
+
+  try {
+  await sendOTPEmail(email, otp);
+  res.json({ success: true });
+} catch (err) {
+  console.error(err);
+  res.status(500).json({ message: "Failed to send OTP" });
+}
+
+  
+});
+
+app.post("/api/verify-otp", (req, res) => {
+  const { email, otp } = req.body;
+
+  const valid = verifyOTP(email, otp);
+
+  if (!valid) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  res.json({ verified: true });
+});
 
   app.post(api.auth.login.path, passport.authenticate("local"), (req, res) => {
     const { password, ...userWithoutPassword } = req.user!;
