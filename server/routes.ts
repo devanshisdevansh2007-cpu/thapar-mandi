@@ -40,17 +40,12 @@ if (!updatedUser) {
   const { password, ...userWithoutPassword } = updatedUser!;
   res.json(userWithoutPassword);
 });
-  app.post(api.auth.signup.path, async (req, res) => {
-    try {
-    const { otp, confirmPassword, ...rest } = req.body;
+ app.post(api.auth.signup.path, async (req, res) => {
+  try {
+    const input = api.auth.signup.input.parse(req.body);
 
-if (rest.password !== confirmPassword) {
-  return res.status(400).json({ message: "Passwords do not match" });
-}
-
-
-const input = api.auth.signup.input.parse(rest);
-    const valid = verifyOTP(input.email, otp);
+    const { otp, confirmPassword, ...rest } = input;
+    const valid = verifyOTP(rest.email, otp);
 
     if (!valid) {
       return res.status(400).json({ message: "Email not verified" });
