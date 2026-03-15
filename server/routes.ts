@@ -296,8 +296,11 @@ app.get("/api/chat/:chatId", async (req, res) => {
 });
 
 // Get user chats (Inbox)
-app.get("/api/chat/user/:userId", async (req, res) => {
-  const { userId } = req.params;
+app.get("/api/chat/user/me", async (req, res) => {
+  if (!req.isAuthenticated())
+    return res.status(401).json({ message: "Unauthorized" });
+
+  const userId = req.user!.id;
 
   const result = await pool.query(
     `SELECT * FROM chats
