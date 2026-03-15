@@ -234,6 +234,79 @@ app.post("/api/verify-otp", (req, res) => {
     await storage.deleteItem(id);
     res.status(204).end();
   });
+// ================= CHAT =================
 
+// Create chat
+app.post("/api/chat/create", async (req, res) => {
+  if (!req.isAuthenticated())
+    return res.status(401).json({ message: "Unauthorized" });
+
+  const { itemId, sellerId } = req.body;
+  const buyerId = req.user!.id;
+
+  const existing = await pool.query(
+    `SELECT * FROM chats WHERE item_id=$1 AND buyer_id=$2`,
+    [itemId, buyerId]
+  );
+
+  if (existing.rows.length > 0) {
+    return res.json(existing.rows[0]);
+  }
+
+  const result = await pool.query(
+    `INSERT INTO chats (item_id, buyer_id, seller_id)
+     VALUES ($1,$2,$3)
+     RETURNING *`,
+    [itemId, buyerId, sellerId]
+  );
+
+  res.json(result.rows[0]);
+});
+
+// Send message
+app.post("/api/chat/send", async (req, res) => {
+  if (!req.isAuthenticated())
+    return res.status(401).json({ message: "Unauthorized" });
+
+  const { chatId, message } = req.body;
+  const senderId = req.user!.id;
+
+  const result = await pool.query(
+    `INSERT INTO messages (chat_id, sender_id, message)
+     VALUES ($1,$2,$3)
+     RETURNING *`,
+    [chatId, senderId, message]
+  );
+
+  res.json(result.rows[0]);
+});
+
+// Get messages
+app.get("/api/chat/:chatId", async (req, res) => {
+  const { chatId } = req.params;
+
+  const result = await pool.query(
+    `SELECT * FROM messages
+     WHERE chat_id=$1
+     ORDER BY created_at ASC`,
+    [chatId]
+  );
+
+  res.json(result.rows);
+});
+
+// Get user chats (Inbox)
+app.get("/api/chat/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const result = await pool.query(
+    `SELECT * FROM chats
+     WHERE buyer_id=$1 OR seller_id=$1
+     ORDER BY created_at DESC`,
+    [userId]
+  );
+
+  res.json(result.rows);
+});
   return httpServer;
 }
