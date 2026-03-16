@@ -110,8 +110,10 @@ export default function MessagesPage() {
 
       {/* RIGHT SIDE → Notification Dot */}
       {chat.unread_count > 0 && (
-        <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-      )}
+  <div className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+    {chat.unread_count}
+  </div>
+)}
 
     </div>
   </div>
