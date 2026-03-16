@@ -3,7 +3,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
 
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(28 73% 92%) 25%,
+    hsl(28 73% 88%) 37%,
+    hsl(28 73% 92%) 63%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 0.5rem;
+}
 @layer base {
   :root {
     /* 
