@@ -345,7 +345,7 @@ SELECT
   users.name AS other_user,
   last_msg.message AS last_message,
 
-  COUNT(messages.id) FILTER (
+  COUNT(DISTINCT messages.id) FILTER (
     WHERE messages.read = false
     AND messages.sender_id != $1
   ) AS unread_count
