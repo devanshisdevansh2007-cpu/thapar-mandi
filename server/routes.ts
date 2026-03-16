@@ -327,6 +327,7 @@ app.get("/api/chat/:chatId", async (req, res) => {
 
   res.json(result.rows);
 });
+  
 
 // Get user chats (Inbox)
 app.get("/api/chat/user/me", async (req, res) => {
@@ -335,39 +336,50 @@ app.get("/api/chat/user/me", async (req, res) => {
 
   const userId = req.user!.id;
 
-  const result = await pool.query(
-  `
-  SELECT 
-    chats.id,
-    chats.item_id,
-    items.title AS item_title,
-    users.name AS other_user,
-    last_msg.message AS last_message
+ const result = await pool.query(
+`
+SELECT 
+  chats.id,
+  chats.item_id,
+  items.title AS item_title,
+  users.name AS other_user,
+  last_msg.message AS last_message,
 
-  FROM chats
+  COUNT(messages.id) FILTER (
+    WHERE messages.read = false
+    AND messages.sender_id != $1
+  ) AS unread_count
 
-  LEFT JOIN items 
-    ON chats.item_id = items.id
+FROM chats
 
-  LEFT JOIN users 
-    ON users.id =
-      CASE
-        WHEN chats.buyer_id = $1 THEN chats.seller_id
-        ELSE chats.buyer_id
-      END
+LEFT JOIN items 
+  ON chats.item_id = items.id
 
-  LEFT JOIN LATERAL (
-    SELECT message
-    FROM messages
-    WHERE messages.chat_id = chats.id
-    ORDER BY id DESC
-    LIMIT 1
-  ) last_msg ON true
+LEFT JOIN users 
+  ON users.id =
+    CASE
+      WHEN chats.buyer_id = $1 THEN chats.seller_id
+      ELSE chats.buyer_id
+    END
 
-  WHERE chats.buyer_id=$1 OR chats.seller_id=$1
-  ORDER BY chats.created_at DESC
-  `,
-  [userId]
+LEFT JOIN messages
+  ON messages.chat_id = chats.id
+
+LEFT JOIN LATERAL (
+  SELECT message
+  FROM messages
+  WHERE messages.chat_id = chats.id
+  ORDER BY id DESC
+  LIMIT 1
+) last_msg ON true
+
+WHERE chats.buyer_id=$1 OR chats.seller_id=$1
+
+GROUP BY chats.id, chats.item_id, items.title, users.name, last_msg.message
+
+ORDER BY chats.created_at DESC
+`,
+[userId]
 );
 
   res.json(result.rows);
