@@ -244,11 +244,13 @@ app.post("/api/chat/create", async (req, res) => {
   const { itemId, sellerId } = req.body;
   const buyerId = req.user!.id;
 
-  const existing = await pool.query(
-    `SELECT * FROM chats WHERE item_id=$1 AND buyer_id=$2`,
-    [itemId, buyerId]
-  );
-
+ const existing = await pool.query(
+  `SELECT * FROM chats
+   WHERE (buyer_id=$1 AND seller_id=$2)
+   OR (buyer_id=$2 AND seller_id=$1)
+   LIMIT 1`,
+  [buyerId, sellerId]
+);
   if (existing.rows.length > 0) {
     return res.json(existing.rows[0]);
   }
@@ -303,11 +305,39 @@ app.get("/api/chat/user/me", async (req, res) => {
   const userId = req.user!.id;
 
   const result = await pool.query(
-    `SELECT * FROM chats
-     WHERE buyer_id=$1 OR seller_id=$1
-     ORDER BY created_at DESC`,
-    [userId]
-  );
+  `
+  SELECT 
+    chats.id,
+    chats.item_id,
+    items.title AS item_title,
+    users.name AS other_user,
+    last_msg.message AS last_message
+
+  FROM chats
+
+  LEFT JOIN items 
+    ON chats.item_id = items.id
+
+  LEFT JOIN users 
+    ON users.id =
+      CASE
+        WHEN chats.buyer_id = $1 THEN chats.seller_id
+        ELSE chats.buyer_id
+      END
+
+  LEFT JOIN LATERAL (
+    SELECT message
+    FROM messages
+    WHERE messages.chat_id = chats.id
+    ORDER BY id DESC
+    LIMIT 1
+  ) last_msg ON true
+
+  WHERE chats.buyer_id=$1 OR chats.seller_id=$1
+  ORDER BY chats.created_at DESC
+  `,
+  [userId]
+);
 
   res.json(result.rows);
 });
