@@ -336,7 +336,7 @@ app.get("/api/chat/user/me", async (req, res) => {
 
   const userId = req.user!.id;
 
- const result = await pool.query(
+const result = await pool.query(
 `
 SELECT 
   chats.id,
@@ -373,13 +373,14 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) last_msg ON true
 
-WHERE chats.buyer_id=$1 OR chats.seller_id=$1
+WHERE chats.buyer_id = $1 OR chats.seller_id = $1
 
-GROUP BY chats.id, chats.item_id, items.title, users.name, last_msg.message
+GROUP BY chats.id, chats.item_id, items.title, users.name, last_msg.message, chats.created_at
 
 ORDER BY chats.created_at DESC
 `,
 [userId]
+);
 );
 
   res.json(result.rows);
