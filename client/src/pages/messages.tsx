@@ -34,7 +34,31 @@ export default function MessagesPage() {
     
 }, []);
 
-  if (loading) return <p className="p-4">Loading chats...</p>;
+  if (loading) {
+  return (
+    <div className="max-w-xl mx-auto mt-10 space-y-4">
+
+      {[1,2,3,4].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 p-4 border rounded-xl"
+        >
+
+          {/* avatar skeleton */}
+          <div className="w-12 h-12 rounded-full shimmer"></div>
+
+          {/* text skeleton */}
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-1/3 rounded shimmer"></div>
+            <div className="h-3 w-1/2 rounded shimmer"></div>
+          </div>
+
+        </div>
+      ))}
+
+    </div>
+  );
+}
 
   return (
     <div className="max-w-2xl mx-auto p-4">
