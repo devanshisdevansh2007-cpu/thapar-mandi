@@ -6,6 +6,7 @@ type Chat = {
   item_title: string;
   other_user: string;
   last_message: string;
+  unread_count: number;
 };
 export default function MessagesPage() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -80,29 +81,37 @@ export default function MessagesPage() {
     className="border border-border rounded-xl p-4 mb-3 cursor-pointer hover:bg-card/40 transition"
     onClick={() => navigate(`/messages/${chat.id}`)}
   >
-    <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between">
 
-      {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-semibold text-primary">
-       {chat.other_user
-  ? chat.other_user.split(" ").map(n => n[0]).join("").slice(0,2)
-  : "U"}
+      {/* LEFT SIDE */}
+      <div className="flex items-center gap-3">
+
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-semibold text-primary">
+          {chat.other_user
+            ? chat.other_user.split(" ").map(n => n[0]).join("").slice(0,2)
+            : "U"}
+        </div>
+
+        {/* Chat Info */}
+        <div>
+          <p className="font-medium">{chat.other_user}</p>
+
+          <p className="text-sm text-gray-500 truncate">
+            {chat.last_message || "Start conversation"}
+          </p>
+
+          <p className="text-xs text-muted-foreground">
+            Regarding: {chat.item_title}
+          </p>
+        </div>
+
       </div>
 
-      {/* Chat Info */}
-      <div className="flex-1">
-        <div className="font-semibold">
-          {chat.other_user || "Unknown user"}
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          Regarding: {chat.item_title}
-        </div>
-
-        <div className="text-sm text-gray-500 truncate">
-          {chat.last_message || "Start conversation"}
-        </div>
-      </div>
+      {/* RIGHT SIDE → Notification Dot */}
+      {chat.unread_count > 0 && (
+        <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+      )}
 
     </div>
   </div>
