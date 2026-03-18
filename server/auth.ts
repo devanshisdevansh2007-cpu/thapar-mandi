@@ -7,7 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
-import { resend } from "../resend"; // your email setup (adjust path)
+import { resend } from "./resend"; // your email setup (adjust path)
 declare global {
   namespace Express {
     interface User extends SelectUser {}
