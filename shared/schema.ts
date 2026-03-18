@@ -10,6 +10,8 @@ export const users = pgTable("users", {
   hostel: text("hostel").notNull(),
   password: text("password").notNull(),
   role: text("role").default("user"),
+  reset_token: text("reset_token").unique(),
+  reset_token_expiry: timestamp("reset_token_expiry"),
 });
 
 export const items = pgTable("items", {
@@ -23,7 +25,11 @@ export const items = pgTable("items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  reset_token: true,
+  reset_token_expiry: true,
+});
 export const insertItemSchema = createInsertSchema(items).omit({
   id: true,
   sellerId: true,
