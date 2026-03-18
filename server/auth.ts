@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
+import { resend } from "../resend"; // your email setup (adjust path)
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -58,7 +59,62 @@ export function setupAuth(app: Express) {
       }
     }),
   );
+app.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body;
 
+  try {
+    const user = await storage.getUserByEmail(email);
+
+    // Always respond same (security)
+    if (!user) {
+      return res.json({ message: "If account exists, email sent" });
+    }
+
+    const token = randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+    await storage.updateUserResetToken(user.id, token, expiry);
+
+    const resetLink = `http://localhost:5173/reset-password/${token}`;
+
+    await resend.emails.send({
+    from: "Thapar Mandi <noreply@yourdomain.com>",
+     
+    to: email,
+      subject: "Reset Password",
+      html: `<p>Click here: <a href="${resetLink}">Reset Password</a></p>`
+    });
+
+    res.json({ message: "Reset link sent" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+  app.post("/auth/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const user = await storage.getUserByResetToken(token);
+
+    if (!user || !user.reset_token_expiry || user.reset_token_expiry < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // 🔐 Use YOUR hashing system (scrypt)
+    const hashedPassword = await hashPassword(newPassword);
+
+    await storage.updateUserPassword(user.id, hashedPassword);
+
+    res.json({ message: "Password updated successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
