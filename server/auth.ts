@@ -75,7 +75,7 @@ app.post("/auth/forgot-password", async (req, res) => {
 
     await storage.updateUserResetToken(user.id, token, expiry);
 
-    const resetLink = `http://localhost:5173/reset-password/${token}`;
+    const resetLink = `https://thaparmandi.store/reset-password/${token}`;
 
     await resend.emails.send({
     from: "noreply@thaparmandi.store",
