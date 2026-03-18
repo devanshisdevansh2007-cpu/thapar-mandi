@@ -13,6 +13,7 @@ const pool = new Pool({
 });
 
 const app = express();
+app.use(express.json());
 const httpServer = createServer(app);
 
 
