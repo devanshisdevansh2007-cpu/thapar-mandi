@@ -318,14 +318,45 @@ app.post("/api/chat/:chatId/read", async (req, res) => {
 app.get("/api/chat/:chatId", async (req, res) => {
   const { chatId } = req.params;
 
-  const result = await pool.query(
-    `SELECT * FROM messages
-     WHERE chat_id=$1
-     ORDER BY created_at ASC`,
-    [chatId]
-  );
+  try {
+    // 1. Get messages
+    const messagesResult = await pool.query(
+      `SELECT * FROM messages
+       WHERE chat_id=$1
+       ORDER BY created_at ASC`,
+      [chatId]
+    );
 
-  res.json(result.rows);
+    // 2. Get chat (to find item_id)
+    const chatResult = await pool.query(
+      `SELECT * FROM chats WHERE id=$1`,
+      [chatId]
+    );
+
+    const chat = chatResult.rows[0];
+
+    let product = null;
+
+    // 3. Get product using item_id
+    if (chat?.item_id) {
+      const productResult = await pool.query(
+        `SELECT id, title, price, image FROM items WHERE id=$1`,
+        [chat.item_id]
+      );
+
+      product = productResult.rows[0];
+    }
+
+    // 4. Send response
+    res.json({
+      messages: messagesResult.rows,
+      product,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
   
 
