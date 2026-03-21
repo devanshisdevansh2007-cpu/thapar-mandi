@@ -96,12 +96,11 @@ useEffect(() => {
     </div>
 
     {/* Optional */}
-    <Link href={`/item/${product.id}`}>
-  <span className="text-xs text-blue-500 cursor-pointer">
+   <Link href={`/item/${product.id}`}>
+  <span className="text-xs text-blue-500 cursor-pointer hover:underline">
     View
   </span>
 </Link>
-  </div>
 )}
    <div
   id="chat-container"
