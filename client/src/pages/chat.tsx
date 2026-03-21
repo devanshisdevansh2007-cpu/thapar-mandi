@@ -12,6 +12,14 @@ const { user } = useAuth();
     setMessages(data);
   };
 
+  const formatTime = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
   const sendMessage = async () => {
     if (!text.trim()) return;
 
@@ -50,7 +58,7 @@ useEffect(() => {
     <div className="max-w-2xl mx-auto p-4">
       <h2 className="text-xl font-bold mb-4">Chat</h2>
 
-    <div
+   <div
   id="chat-container"
   className="border rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
 >
@@ -60,13 +68,25 @@ useEffect(() => {
     return (
       <div
         key={msg.id}
-        className={`max-w-[70%] px-4 py-2 rounded-xl text-sm ${
-          isMine
-            ? "self-end bg-primary text-primary-foreground"
-            : "self-start bg-gray-200 dark:bg-gray-700"
-        }`}
+        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
       >
-        {msg.message}
+        <div
+          className={`
+           max-w-[70%] px-4 py-2 pb-5 rounded-2xl text-sm relative
+            ${isMine
+              ? "bg-primary text-primary-foreground"
+              : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white"}
+            shadow
+          `}
+        >
+          {/* Message */}
+          <p>{msg.message}</p>
+
+          {/* Timestamp */}
+          <span className="text-[10px] opacity-70 absolute bottom-1 right-2">
+            {formatTime(msg.created_at)}
+          </span>
+        </div>
       </div>
     );
   })}
