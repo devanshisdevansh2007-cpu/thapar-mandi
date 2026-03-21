@@ -136,7 +136,7 @@ useEffect(() => {
               : "bg-gray-200 text-black rounded-bl-none"
           }`}
         >
-          {msg.text}
+          {msg.message}
 
           {/* Timestamp */}
           <div className="text-[10px] mt-1 text-right opacity-70">
