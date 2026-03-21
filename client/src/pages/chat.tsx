@@ -79,7 +79,7 @@ useEffect(() => {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h2 className="text-xl font-bold mb-4">Chat</h2>
-      {product && (
+     {product && (
   <div className="flex items-center gap-3 border rounded-lg p-3 mb-3 bg-white dark:bg-gray-800 shadow-sm">
     
     {/* Image */}
@@ -95,12 +95,14 @@ useEffect(() => {
       <p className="text-xs text-gray-500">₹{product.price}</p>
     </div>
 
-    {/* Optional */}
-   <Link href={`/item/${product.id}`}>
-  <span className="text-xs text-blue-500 cursor-pointer hover:underline">
-    View
-  </span>
-</Link>
+    {/* View Button */}
+    <Link href={`/item/${product.id}`}>
+      <span className="text-xs text-blue-500 cursor-pointer hover:underline">
+        View
+      </span>
+    </Link>
+
+  </div>
 )}
    <div
   id="chat-container"
