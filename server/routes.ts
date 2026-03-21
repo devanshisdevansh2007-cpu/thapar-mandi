@@ -164,13 +164,6 @@ export async function registerRoutes(
        RETURNING *`,
       [itemId, buyerId, sellerId]
     );
-
-    res.json(result.rows[0]);
-  });
-
-  return httpServer;
-}
-
     res.json(result.rows[0]);
   });
 
