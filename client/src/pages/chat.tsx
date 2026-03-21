@@ -20,6 +20,23 @@ const { user } = useAuth();
     minute: "2-digit",
   });
 };
+  const formatDateLabel = (date) => {
+  const d = new Date(date);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const isToday = d.toDateString() === today.toDateString();
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  if (isToday) return "Today";
+  if (isYesterday) return "Yesterday";
+
+  return d.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+  });
+};
   const sendMessage = async () => {
     if (!text.trim()) return;
 
@@ -62,34 +79,48 @@ useEffect(() => {
   id="chat-container"
   className="border rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
 >
-  {messages.map((msg) => {
-    const isMine = msg.sender_id === user?.id;
+  {messages.map((msg, index) => {
+  const isMine = msg.sender_id === user?.id;
 
-    return (
+  const currentDate = formatDateLabel(msg.created_at);
+  const prevDate =
+    index > 0 ? formatDateLabel(messages[index - 1].created_at) : null;
+
+  const showDate = currentDate !== prevDate;
+
+  return (
+    <div key={msg.id + "-wrapper"}>
+      {/* Date Separator */}
+      {showDate && (
+        <div className="text-center text-xs text-gray-500 my-2">
+          ─── {currentDate} ───
+        </div>
+      )}
+
+      {/* Message */}
       <div
-        key={msg.id}
+       
         className={`flex ${isMine ? "justify-end" : "justify-start"}`}
       >
         <div
           className={`
-           max-w-[70%] px-4 py-2 pb-5 rounded-2xl text-sm relative
+            max-w-[70%] px-4 py-2 pb-5 rounded-2xl text-sm relative
             ${isMine
               ? "bg-primary text-primary-foreground"
               : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white"}
             shadow
           `}
         >
-          {/* Message */}
           <p>{msg.message}</p>
 
-          {/* Timestamp */}
           <span className="text-[10px] opacity-70 absolute bottom-1 right-2">
             {formatTime(msg.created_at)}
           </span>
         </div>
       </div>
-    );
-  })}
+    </div>
+  );
+})}
 </div>
 
       <div className="flex gap-2">
