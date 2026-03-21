@@ -339,10 +339,18 @@ app.get("/api/chat/:chatId", async (req, res) => {
 
     // 3. Get product using item_id
     if (chat?.item_id) {
-      const productResult = await pool.query(
-        `SELECT id, title, price, image FROM items WHERE id=$1`,
-        [chat.item_id]
-      );
+     const productResult = await pool.query(
+  `SELECT 
+     items.id,
+     items.title,
+     items.price,
+     items.image,
+     users.name AS seller_name
+   FROM items
+   JOIN users ON items.user_id = users.id
+   WHERE items.id = $1`,
+  [chat.item_id]
+);
 
       product = productResult.rows[0];
     }
