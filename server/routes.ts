@@ -20,13 +20,32 @@ export async function registerRoutes(
     next();
   }
 
- function isNotBlocked(req: any, res: any, next: any) {
-  if (req.user?.blocked) {
-    return res.status(403).json({ message: "You are blocked" });
+async function isNotBlocked(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  next();
-}
 
+  try {
+    const result = await pool.query(
+      `SELECT blocked FROM users WHERE id = $1`,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (result.rows[0].blocked === true) {
+      return res.status(403).json({ message: "You are blocked" });
+    }
+
+    next();
+
+  } catch (err) {
+    console.error("Block check failed:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
   async function isUserBlocked(user1: number, user2: number) {
     const result = await pool.query(
       `SELECT 1 FROM blocked_users 
@@ -135,14 +154,24 @@ app.post("/api/admin/block-user/:id", isAdmin, async (req, res) => {
 });
 // ✅ UNBLOCK USER
 app.post("/api/admin/unblock-user/:id", isAdmin, async (req, res) => {
-  const userId = Number(req.params.id);
+  try {
+    const userId = req.params.id; // ✅ FIXED (no Number)
 
-  await pool.query(
-    `UPDATE users SET blocked = false WHERE id = $1`,
-    [userId]
-  );
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
-  res.json({ success: true });
+    await pool.query(
+      `UPDATE users SET blocked = false WHERE id = $1`,
+      [userId]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Unblock error:", err);
+    res.status(500).json({ message: "Server crashed" });
+  }
 });
 
 // ✅ DELETE ITEM (ADMIN POWER)
