@@ -38,7 +38,18 @@ export async function registerRoutes(
     const { password, ...userWithoutPassword } = req.user!;
     res.json(userWithoutPassword);
   });
+app.post("/auth/logout", (req, res) => {
+  req.logout(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
 
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logged out" });
+    });
+  });
+});
   app.get(api.auth.me.path, (req, res) => {
     if (!req.isAuthenticated())
       return res.status(401).json({ message: "Unauthorized" });
