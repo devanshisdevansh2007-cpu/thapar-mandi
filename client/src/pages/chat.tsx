@@ -9,7 +9,7 @@ export default function ChatPage() {
   const [product, setProduct] = useState<any>(null);
   const [text, setText] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
-
+  const [otherUser, setOtherUser] = useState("User");
   const { user } = useAuth();
 
   // 🔥 FETCH BLOCK STATUS (NEW)
@@ -32,7 +32,16 @@ export default function ChatPage() {
     }
 
     const data = await res.json();
+  // 🔥 get other user name from chat list API
+const chatRes = await fetch("/api/chat", {
+  credentials: "include",
+});
+const chats = await chatRes.json();
 
+const currentChat = chats.find((c: any) => String(c.id) === String(chatId));
+if (currentChat) {
+  setOtherUser(currentChat.other_user);
+}
     setMessages(data.messages || data);
     setProduct(data.product || null);
 
@@ -112,12 +121,12 @@ export default function ChatPage() {
       <div className="flex items-center justify-between mb-3 border-b pb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-400 text-white flex items-center justify-center font-bold">
-            {product?.seller_name?.[0]?.toUpperCase() || "U"}
+           {otherUser?.[0]?.toUpperCase() || "U"}
           </div>
 
           <div className="flex flex-col">
             <span className="text-sm font-semibold">
-              {product?.seller_name || "Seller"}
+              {otherUser}
             </span>
 
             <span className="text-xs text-gray-500">
@@ -216,7 +225,7 @@ export default function ChatPage() {
                       : "bg-gray-200 text-black rounded-bl-none"
                   }`}
                 >
-                  {msg.text}
+                  {msg.message}
 
                   <div className="text-[10px] mt-1 text-right opacity-70">
                     {formatTime(msg.created_at)}
