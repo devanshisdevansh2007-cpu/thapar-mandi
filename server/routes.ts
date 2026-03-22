@@ -429,7 +429,7 @@ app.get("/api/chat", async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO messages (chat_id, sender_id, text)
+      `INSERT INTO messages (chat_id, sender_id, message)
        VALUES ($1, $2, $3)
        RETURNING *`,
       [chatId, senderId, text]
