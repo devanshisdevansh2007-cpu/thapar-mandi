@@ -49,20 +49,33 @@ export async function registerRoutes(
   // ================= ITEMS =================
 
   // 🔥 GET ALL ITEMS (SAFE + SEARCH)
-  app.get(api.items.list.path, async (req, res) => {
-    const search = req.query.search as string | undefined;
-    const items = await storage.getItems(search);
+app.get(api.items.list.path, async (req, res) => {
+  const search = req.query.search as string | undefined;
+  const items = await storage.getItems(search);
 
-    const result = await Promise.all(
-      items.map(async (item) => {
-        const seller = await storage.getUser(item.sellerId);
-        const { password, phoneNumber, ...safeSeller } = seller!;
-        return { ...item, seller: safeSeller };
-      })
-    );
+  const result = await Promise.all(
+    items.map(async (item) => {
+      const seller = await storage.getUser(item.sellerId);
 
-    res.json(result);
-  });
+      // 🛑 IMPORTANT FIX
+      if (!seller) {
+        return {
+          ...item,
+          seller: null,
+        };
+      }
+
+      const { password, phoneNumber, ...safeSeller } = seller;
+
+      return {
+        ...item,
+        seller: safeSeller,
+      };
+    })
+  );
+
+  res.json(result);
+});
 
   // 🔥 GET SINGLE ITEM (SAFE)
   app.get(api.items.get.path, async (req, res) => {
