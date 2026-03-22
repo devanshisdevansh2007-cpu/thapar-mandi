@@ -6,7 +6,14 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+if (isLoading) return null;
+
+if (!user) {
+  window.location.href = "/login";
+  return null;
+}
 const [hostel, setHostel] = useState(user?.hostel || "");
   const updateHostel = async () => {
   await fetch("/api/user/hostel", {
@@ -57,7 +64,7 @@ const [hostel, setHostel] = useState(user?.hostel || "");
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
           
           <h1 className="text-3xl md:text-5xl font-display font-extrabold text-foreground mb-4">
-            Welcome back, <span className="text-primary">{user?.name.split(' ')[0]}</span>! 👋
+            Welcome back, <span className="text-primary">{user.name ? user.name.split(' ')[0] : ""}</span>! 👋
           </h1>
           <p className="text-lg text-foreground/80 font-medium max-w-xl">
             What would you like to do today? You can browse items posted by other students or list your own.
