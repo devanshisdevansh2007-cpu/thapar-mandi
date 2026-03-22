@@ -2,196 +2,240 @@ import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+
 export default function ChatPage() {
   const { chatId } = useParams();
   const [messages, setMessages] = useState<any[]>([]);
   const [product, setProduct] = useState<any>(null);
   const [text, setText] = useState("");
-const { user } = useAuth();
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  const { user } = useAuth();
+
   const fetchMessages = async () => {
-    const res = await fetch(`/api/chat/${chatId}`);
+    const res = await fetch(`/api/chat/${chatId}/messages`);
+
+    // 🔥 BLOCK HANDLE
+    if (res.status === 403) {
+      setIsBlocked(true);
+      return;
+    }
+
     const data = await res.json();
-    
-// handle both cases (safe)
-setMessages(data.messages || data);
-setProduct(data.product || null);
+
+    setMessages(data.messages || data);
+    setProduct(data.product || null);
   };
 
-  const formatTime = (date) => {
-  if (!date) return "";
-  const d = new Date(date);
-  return d.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-  const formatDateLabel = (date) => {
-  const d = new Date(date);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
+  const formatTime = (date: any) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  const isToday = d.toDateString() === today.toDateString();
-  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const formatDateLabel = (date: any) => {
+    const d = new Date(date);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
 
-  if (isToday) return "Today";
-  if (isYesterday) return "Yesterday";
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
 
-  return d.toLocaleDateString([], {
-    day: "numeric",
-    month: "short",
-  });
-};
+    return d.toLocaleDateString([], {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isBlocked) return;
 
-    await fetch("/api/chat/send", {
+    const res = await fetch("/api/message/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         chatId,
-        message: text,
+        text,
       }),
     });
+
+    if (res.status === 403) {
+      setIsBlocked(true);
+      return;
+    }
 
     setText("");
     fetchMessages();
   };
 
   useEffect(() => {
-  fetchMessages();
-  
-  // mark messages as read
-  fetch(`/api/chat/${chatId}/read`, {
-    method: "POST",
-  });
+    fetchMessages();
 
-  const interval = setInterval(fetchMessages, 2000);
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
+  }, [chatId]);
 
-  return () => clearInterval(interval);
-}, [chatId]);
-useEffect(() => {
-  const el = document.getElementById("chat-container");
-  if (el) el.scrollTop = el.scrollHeight;
-}, [messages]);
+  useEffect(() => {
+    const el = document.getElementById("chat-container");
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
   const isOnline =
-  product?.last_seen &&
-  new Date().getTime() - new Date(product.last_seen).getTime() < 2 * 60 * 1000;
+    product?.last_seen &&
+    new Date().getTime() - new Date(product.last_seen).getTime() < 2 * 60 * 1000;
+
   return (
     <div className="max-w-2xl mx-auto p-4">
-     <div className="flex items-center gap-3 mb-3 border-b pb-3">
 
-  {/* Avatar */}
-  <div className="w-10 h-10 rounded-full bg-orange-400 text-white flex items-center justify-center font-bold">
-    {product?.seller_name?.[0]?.toUpperCase() || "U"}
-  </div>
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-3 border-b pb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-orange-400 text-white flex items-center justify-center font-bold">
+            {product?.seller_name?.[0]?.toUpperCase() || "U"}
+          </div>
 
-  {/* Name + Status */}
-  <div className="flex flex-col">
-    <span className="text-sm font-semibold">
-      {product?.seller_name || "Seller"}
-    </span>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">
+              {product?.seller_name || "Seller"}
+            </span>
 
-   <span className="text-xs text-gray-500">
-  {isOnline
-    ? "🟢 Online"
-    : product?.last_seen
-    ? `Last seen ${formatTime(product.last_seen)}`
-    : "Offline"}
-</span>
-  </div>
+            <span className="text-xs text-gray-500">
+              {isOnline
+                ? "🟢 Online"
+                : product?.last_seen
+                ? `Last seen ${formatTime(product.last_seen)}`
+                : "Offline"}
+            </span>
+          </div>
+        </div>
 
-</div>
-     {product && (
-  <div className="flex items-center gap-3 border rounded-lg p-3 mb-3 bg-white dark:bg-gray-800 shadow-sm">
-    
-    {/* Image */}
-    <img
-      src={product.image}
-      alt="product"
-      className="w-12 h-12 object-cover rounded"
-    />
+        {/* 🔥 BLOCK BUTTON */}
+        {isBlocked ? (
+          <button
+            onClick={async () => {
+              await fetch(`/api/unblock/${product?.seller_id}`, {
+                method: "DELETE",
+              });
+              setIsBlocked(false);
+              fetchMessages();
+            }}
+            className="text-xs bg-green-500 text-white px-3 py-1 rounded"
+          >
+            Unblock
+          </button>
+        ) : (
+          <button
+            onClick={async () => {
+              await fetch(`/api/block/${product?.seller_id}`, {
+                method: "POST",
+              });
+              setIsBlocked(true);
+            }}
+            className="text-xs bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Block
+          </button>
+        )}
+      </div>
 
-    {/* Info */}
-    <div className="flex-1">
-      <p className="text-sm font-semibold">{product.title}</p>
-      <p className="text-xs text-gray-500">₹{product.price}</p>
-    </div>
+      {/* PRODUCT */}
+      {product && (
+        <div className="flex items-center gap-3 border rounded-lg p-3 mb-3 bg-white shadow-sm">
+          <img
+            src={product.image}
+            alt="product"
+            className="w-12 h-12 object-cover rounded"
+          />
 
-    {/* View Button */}
-    <Link href={`/item/${product.id}`}>
-      <span className="text-xs text-blue-500 cursor-pointer hover:underline">
-        View
-      </span>
-    </Link>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">{product.title}</p>
+            <p className="text-xs text-gray-500">₹{product.price}</p>
+          </div>
 
-  </div>
-)}
-   <div
-  id="chat-container"
-  className="border rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
->
-  {messages.map((msg, index) => {
-  const isMine = msg.sender_id === user?.id;
-
-  const currentDate = formatDateLabel(msg.created_at);
-  const prevDate =
-    index > 0 ? formatDateLabel(messages[index - 1].created_at) : null;
-
-  const showDate = currentDate !== prevDate;
-
-  return (
-    <div key={msg.id + "-wrapper"}>
-      {/* Date Separator */}
-      {showDate && (
-        <div className="text-center text-xs text-gray-500 my-2">
-          ─── {currentDate} ───
+          <Link href={`/item/${product.id}`}>
+            <span className="text-xs text-blue-500 cursor-pointer hover:underline">
+              View
+            </span>
+          </Link>
         </div>
       )}
 
-      {/* ✅ MESSAGE BUBBLE */}
-      <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-        <div
-          className={`relative max-w-xs px-4 py-2 rounded-2xl text-sm shadow
-          ${
-            isMine
-              ? "bg-orange-500 text-white rounded-br-none"
-              : "bg-gray-200 text-black rounded-bl-none"
-          }`}
-        >
-          {msg.message}
+      {/* MESSAGES */}
+      <div
+        id="chat-container"
+        className="border rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
+      >
+        {messages.map((msg, index) => {
+          const isMine = msg.sender_id === user?.id;
 
-          {/* Timestamp */}
-          <div className="text-[10px] mt-1 text-right opacity-70">
-           {formatTime(msg.created_at)}
-          </div>
+          const currentDate = formatDateLabel(msg.created_at);
+          const prevDate =
+            index > 0
+              ? formatDateLabel(messages[index - 1].created_at)
+              : null;
+
+          const showDate = currentDate !== prevDate;
+
+          return (
+            <div key={msg.id + "-wrapper"}>
+              {showDate && (
+                <div className="text-center text-xs text-gray-500 my-2">
+                  ─── {currentDate} ───
+                </div>
+              )}
+
+              <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`relative max-w-xs px-4 py-2 rounded-2xl text-sm shadow
+                  ${
+                    isMine
+                      ? "bg-orange-500 text-white rounded-br-none"
+                      : "bg-gray-200 text-black rounded-bl-none"
+                  }`}
+                >
+                  {msg.text}
+
+                  <div className="text-[10px] mt-1 text-right opacity-70">
+                    {formatTime(msg.created_at)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* INPUT */}
+      {isBlocked ? (
+        <p className="text-center text-red-500">
+          You blocked this user
+        </p>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") sendMessage();
+            }}
+            className="flex-1 border rounded px-3 py-2"
+            placeholder="Type a message..."
+          />
+
+          <button
+            onClick={sendMessage}
+            className="bg-primary text-white px-4 py-2 rounded"
+          >
+            Send
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
-})}
-</div>
-
-      <div className="flex gap-2">
-        <input
-  value={text}
-  onChange={(e) => setText(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") sendMessage();
-  }}
-  className="flex-1 border rounded px-3 py-2"
-  placeholder="Type a message..."
-/>
-
-        <button
-          onClick={sendMessage}
-          className="bg-primary text-white px-4 py-2 rounded"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
+} 
