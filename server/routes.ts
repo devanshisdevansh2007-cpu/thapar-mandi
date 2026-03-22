@@ -13,7 +13,6 @@ export async function registerRoutes(
 
   setupAuth(app);
 
-  // 🔒 ADMIN MIDDLEWARE
   function isAdmin(req: any, res: any, next: any) {
     if (!req.isAuthenticated() || req.user.role !== "admin") {
       return res.status(403).json({ message: "Admin only" });
@@ -21,7 +20,6 @@ export async function registerRoutes(
     next();
   }
 
-  // 🔒 GLOBAL BLOCK (ADMIN BAN)
   function isNotBlocked(req: any, res: any, next: any) {
     if (req.user?.blocked) {
       return res.status(403).json({ message: "You are blocked" });
@@ -29,7 +27,6 @@ export async function registerRoutes(
     next();
   }
 
-  // 🔥 USER-TO-USER BLOCK CHECK
   async function isUserBlocked(user1: number, user2: number) {
     const result = await pool.query(
       `SELECT 1 FROM blocked_users 
@@ -58,7 +55,6 @@ export async function registerRoutes(
     req.logout(() => {
       req.session.destroy((err) => {
         if (err) return res.status(500).json({ message: "Logout failed" });
-
         res.clearCookie("connect.sid");
         res.json({ message: "Logged out" });
       });
@@ -69,7 +65,6 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-
     const { password, ...safeUser } = req.user!;
     res.json(safeUser);
   });
@@ -82,13 +77,11 @@ export async function registerRoutes(
     }
 
     const { hostel } = req.body;
-
     if (!hostel) {
       return res.status(400).json({ message: "Hostel required" });
     }
 
     await storage.updateUser(req.user!.id, { hostel });
-
     res.json({ success: true });
   });
 
@@ -150,39 +143,6 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  // ================= ADMIN =================
-
-  app.delete("/api/admin/item/:id", isAdmin, async (req, res) => {
-    await storage.deleteItem(Number(req.params.id));
-    res.json({ success: true });
-  });
-
-  app.put("/api/admin/item/:id", isAdmin, async (req, res) => {
-    const updated = await storage.updateItem(Number(req.params.id), req.body);
-    res.json(updated);
-  });
-
-  app.post("/api/admin/block-user/:id", isAdmin, async (req, res) => {
-    const userId = Number(req.params.id);
-
-    if (req.user.id === userId) {
-      return res.status(400).json({ message: "Cannot block yourself" });
-    }
-
-    await storage.updateUser(userId, { blocked: true });
-    res.json({ success: true });
-  });
-
-  app.post("/api/admin/unblock-user/:id", isAdmin, async (req, res) => {
-    await storage.updateUser(Number(req.params.id), { blocked: false });
-    res.json({ success: true });
-  });
-
-  app.get("/api/admin/users", isAdmin, async (req, res) => {
-    const users = await storage.getAllUsers();
-    res.json(users);
-  });
-
   // ================= USER BLOCK =================
 
   app.post("/api/block/:id", async (req, res) => {
@@ -205,6 +165,7 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  // ✅ FIXED UNBLOCK (no reverse delete)
   app.delete("/api/unblock/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
@@ -213,101 +174,37 @@ export async function registerRoutes(
 
     await pool.query(
       `DELETE FROM blocked_users 
-       WHERE 
-         (blocker_id = $1 AND blocked_id = $2)
-         OR
-         (blocker_id = $2 AND blocked_id = $1)`,
+       WHERE blocker_id = $1 AND blocked_id = $2`,
       [userId, otherUserId]
     );
 
     res.json({ success: true });
   });
 
-  // ================= CHAT =================
-  app.get("/api/chat/:chatId/messages", async (req, res) => {
-  if (!req.isAuthenticated()) return res.sendStatus(401);
+  // ✅ NEW API (CRITICAL FIX)
+  app.get("/api/is-blocked/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
 
-  const chatId = Number(req.params.chatId);
-  const userId = req.user!.id;
+    const userId = req.user!.id;
+    const otherUserId = Number(req.params.id);
 
-  const chatRes = await pool.query(
-    `SELECT * FROM chats WHERE id = $1`,
-    [chatId]
-  );
+    const result = await pool.query(
+      `SELECT 1 FROM blocked_users 
+       WHERE blocker_id = $1 AND blocked_id = $2`,
+      [userId, otherUserId]
+    );
 
-  if (chatRes.rows.length === 0) {
-    return res.status(404).json({ message: "Chat not found" });
-  }
-
-  const chat = chatRes.rows[0];
-
-  const otherUser =
-    chat.buyer_id === userId ? chat.seller_id : chat.buyer_id;
-
-  const blocked = await isUserBlocked(userId, otherUser);
-
-  if (blocked) {
-    return res.status(403).json({ message: "Blocked" });
-  }
-
-  const messages = await pool.query(
-    `SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC`,
-    [chatId]
-  );
-
-  res.json(messages.rows);
-});
-
-  app.post("/api/chat/create", isNotBlocked, async (req, res) => {
-    if (!req.isAuthenticated())
-      return res.status(401).json({ message: "Unauthorized" });
-
-    const { itemId, sellerId } = req.body;
-    const buyerId = req.user!.id;
-
-    try {
-      // 🔥 BLOCK CHECK
-      const blocked = await isUserBlocked(buyerId, sellerId);
-      if (blocked) {
-        return res.status(403).json({ message: "User is blocked" });
-      }
-
-      const existing = await pool.query(
-        `SELECT * FROM chats
-         WHERE (buyer_id=$1 AND seller_id=$2)
-         OR (buyer_id=$2 AND seller_id=$1)
-         LIMIT 1`,
-        [buyerId, sellerId]
-      );
-
-      if (existing.rows.length > 0) {
-        return res.json(existing.rows[0]);
-      }
-
-      const result = await pool.query(
-        `INSERT INTO chats (item_id, buyer_id, seller_id)
-         VALUES ($1,$2,$3)
-         RETURNING *`,
-        [itemId, buyerId, sellerId]
-      );
-
-      res.json(result.rows[0]);
-
-    } catch (err) {
-      console.error("Chat create error:", err);
-      res.status(500).json({ message: "Error creating chat" });
-    }
+    res.json({ blocked: result.rows.length > 0 });
   });
-app.post("/api/message/send", isNotBlocked, async (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
 
-  const { chatId, text } = req.body;
-  const senderId = req.user!.id;
+  // ================= CHAT =================
 
-  try {
-    // 🔍 get chat
+  app.get("/api/chat/:chatId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const chatId = Number(req.params.chatId);
+    const userId = req.user!.id;
+
     const chatRes = await pool.query(
       `SELECT * FROM chats WHERE id = $1`,
       [chatId]
@@ -319,18 +216,85 @@ app.post("/api/message/send", isNotBlocked, async (req, res) => {
 
     const chat = chatRes.rows[0];
 
-    // 👤 find receiver
+    const otherUser =
+      chat.buyer_id === userId ? chat.seller_id : chat.buyer_id;
+
+    const blocked = await isUserBlocked(userId, otherUser);
+
+    if (blocked) {
+      return res.status(403).json({ message: "Blocked" });
+    }
+
+    const messages = await pool.query(
+      `SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC`,
+      [chatId]
+    );
+
+    res.json(messages.rows);
+  });
+
+  app.post("/api/chat/create", isNotBlocked, async (req, res) => {
+    if (!req.isAuthenticated())
+      return res.status(401).json({ message: "Unauthorized" });
+
+    const { itemId, sellerId } = req.body;
+    const buyerId = req.user!.id;
+
+    const blocked = await isUserBlocked(buyerId, sellerId);
+    if (blocked) {
+      return res.status(403).json({ message: "User is blocked" });
+    }
+
+    const existing = await pool.query(
+      `SELECT * FROM chats
+       WHERE (buyer_id=$1 AND seller_id=$2)
+       OR (buyer_id=$2 AND seller_id=$1)
+       LIMIT 1`,
+      [buyerId, sellerId]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.json(existing.rows[0]);
+    }
+
+    const result = await pool.query(
+      `INSERT INTO chats (item_id, buyer_id, seller_id)
+       VALUES ($1,$2,$3)
+       RETURNING *`,
+      [itemId, buyerId, sellerId]
+    );
+
+    res.json(result.rows[0]);
+  });
+
+  app.post("/api/message/send", isNotBlocked, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { chatId, text } = req.body;
+    const senderId = req.user!.id;
+
+    const chatRes = await pool.query(
+      `SELECT * FROM chats WHERE id = $1`,
+      [chatId]
+    );
+
+    if (chatRes.rows.length === 0) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    const chat = chatRes.rows[0];
+
     const receiverId =
       chat.buyer_id === senderId ? chat.seller_id : chat.buyer_id;
 
-    // 🔥 BLOCK CHECK
     const blocked = await isUserBlocked(senderId, receiverId);
 
     if (blocked) {
       return res.status(403).json({ message: "User is blocked" });
     }
 
-    // 💬 insert message
     const result = await pool.query(
       `INSERT INTO messages (chat_id, sender_id, text)
        VALUES ($1, $2, $3)
@@ -339,11 +303,7 @@ app.post("/api/message/send", isNotBlocked, async (req, res) => {
     );
 
     res.json(result.rows[0]);
+  });
 
-  } catch (err) {
-    console.error("Send message error:", err);
-    res.status(500).json({ message: "Error sending message" });
-  }
-});
   return httpServer;
 }
