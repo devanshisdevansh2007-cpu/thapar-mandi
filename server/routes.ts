@@ -21,12 +21,27 @@ export async function registerRoutes(
     next();
   }
 
-  // 🔒 BLOCK CHECK
+  // 🔒 GLOBAL BLOCK (ADMIN BAN)
   function isNotBlocked(req: any, res: any, next: any) {
     if (req.user?.blocked) {
       return res.status(403).json({ message: "You are blocked" });
     }
     next();
+  }
+
+  // 🔥 USER-TO-USER BLOCK CHECK
+  async function isUserBlocked(user1: number, user2: number) {
+    const result = await pool.query(
+      `SELECT 1 FROM blocked_users 
+       WHERE 
+         (blocker_id = $1 AND blocked_id = $2)
+         OR
+         (blocker_id = $2 AND blocked_id = $1)
+       LIMIT 1`,
+      [user1, user2]
+    );
+
+    return result.rows.length > 0;
   }
 
   // ================= AUTH =================
@@ -61,7 +76,6 @@ export async function registerRoutes(
 
   // ================= USER =================
 
-  // 🔥 FIXED: UPDATE HOSTEL (THIS WAS YOUR BUG)
   app.put("/api/user/hostel", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -87,11 +101,9 @@ export async function registerRoutes(
     const result = await Promise.all(
       items.map(async (item) => {
         const seller = await storage.getUser(item.sellerId);
-
         if (!seller) return { ...item, seller: null };
 
         const { password, phoneNumber, ...safeSeller } = seller;
-
         return { ...item, seller: safeSeller };
       })
     );
@@ -104,11 +116,9 @@ export async function registerRoutes(
     if (!item) return res.status(404).json({ message: "Item not found" });
 
     const seller = await storage.getUser(item.sellerId);
-
     if (!seller) return res.json({ ...item, seller: null });
 
     const { password, phoneNumber, ...safeSeller } = seller;
-
     res.json({ ...item, seller: safeSeller });
   });
 
@@ -173,6 +183,46 @@ export async function registerRoutes(
     res.json(users);
   });
 
+  // ================= USER BLOCK =================
+
+  app.post("/api/block/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const blockerId = req.user!.id;
+    const blockedId = Number(req.params.id);
+
+    if (blockerId === blockedId) {
+      return res.status(400).json({ message: "Cannot block yourself" });
+    }
+
+    await pool.query(
+      `INSERT INTO blocked_users (blocker_id, blocked_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [blockerId, blockedId]
+    );
+
+    res.json({ success: true });
+  });
+
+  app.delete("/api/unblock/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const userId = req.user!.id;
+    const otherUserId = Number(req.params.id);
+
+    await pool.query(
+      `DELETE FROM blocked_users 
+       WHERE 
+         (blocker_id = $1 AND blocked_id = $2)
+         OR
+         (blocker_id = $2 AND blocked_id = $1)`,
+      [userId, otherUserId]
+    );
+
+    res.json({ success: true });
+  });
+
   // ================= CHAT =================
 
   app.post("/api/chat/create", isNotBlocked, async (req, res) => {
@@ -182,26 +232,38 @@ export async function registerRoutes(
     const { itemId, sellerId } = req.body;
     const buyerId = req.user!.id;
 
-    const existing = await pool.query(
-      `SELECT * FROM chats
-       WHERE (buyer_id=$1 AND seller_id=$2)
-       OR (buyer_id=$2 AND seller_id=$1)
-       LIMIT 1`,
-      [buyerId, sellerId]
-    );
+    try {
+      // 🔥 BLOCK CHECK
+      const blocked = await isUserBlocked(buyerId, sellerId);
+      if (blocked) {
+        return res.status(403).json({ message: "User is blocked" });
+      }
 
-    if (existing.rows.length > 0) {
-      return res.json(existing.rows[0]);
+      const existing = await pool.query(
+        `SELECT * FROM chats
+         WHERE (buyer_id=$1 AND seller_id=$2)
+         OR (buyer_id=$2 AND seller_id=$1)
+         LIMIT 1`,
+        [buyerId, sellerId]
+      );
+
+      if (existing.rows.length > 0) {
+        return res.json(existing.rows[0]);
+      }
+
+      const result = await pool.query(
+        `INSERT INTO chats (item_id, buyer_id, seller_id)
+         VALUES ($1,$2,$3)
+         RETURNING *`,
+        [itemId, buyerId, sellerId]
+      );
+
+      res.json(result.rows[0]);
+
+    } catch (err) {
+      console.error("Chat create error:", err);
+      res.status(500).json({ message: "Error creating chat" });
     }
-
-    const result = await pool.query(
-      `INSERT INTO chats (item_id, buyer_id, seller_id)
-       VALUES ($1,$2,$3)
-       RETURNING *`,
-      [itemId, buyerId, sellerId]
-    );
-
-    res.json(result.rows[0]);
   });
 
   return httpServer;
