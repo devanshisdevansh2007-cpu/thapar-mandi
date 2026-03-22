@@ -224,6 +224,39 @@ export async function registerRoutes(
   });
 
   // ================= CHAT =================
+  app.get("/api/chat/:chatId/messages", async (req, res) => {
+  if (!req.isAuthenticated()) return res.sendStatus(401);
+
+  const chatId = Number(req.params.chatId);
+  const userId = req.user!.id;
+
+  const chatRes = await pool.query(
+    `SELECT * FROM chats WHERE id = $1`,
+    [chatId]
+  );
+
+  if (chatRes.rows.length === 0) {
+    return res.status(404).json({ message: "Chat not found" });
+  }
+
+  const chat = chatRes.rows[0];
+
+  const otherUser =
+    chat.buyer_id === userId ? chat.seller_id : chat.buyer_id;
+
+  const blocked = await isUserBlocked(userId, otherUser);
+
+  if (blocked) {
+    return res.status(403).json({ message: "Blocked" });
+  }
+
+  const messages = await pool.query(
+    `SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC`,
+    [chatId]
+  );
+
+  res.json(messages.rows);
+});
 
   app.post("/api/chat/create", isNotBlocked, async (req, res) => {
     if (!req.isAuthenticated())
@@ -265,6 +298,52 @@ export async function registerRoutes(
       res.status(500).json({ message: "Error creating chat" });
     }
   });
+app.post("/api/message/send", isNotBlocked, async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
+  const { chatId, text } = req.body;
+  const senderId = req.user!.id;
+
+  try {
+    // 🔍 get chat
+    const chatRes = await pool.query(
+      `SELECT * FROM chats WHERE id = $1`,
+      [chatId]
+    );
+
+    if (chatRes.rows.length === 0) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    const chat = chatRes.rows[0];
+
+    // 👤 find receiver
+    const receiverId =
+      chat.buyer_id === senderId ? chat.seller_id : chat.buyer_id;
+
+    // 🔥 BLOCK CHECK
+    const blocked = await isUserBlocked(senderId, receiverId);
+
+    if (blocked) {
+      return res.status(403).json({ message: "User is blocked" });
+    }
+
+    // 💬 insert message
+    const result = await pool.query(
+      `INSERT INTO messages (chat_id, sender_id, text)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [chatId, senderId, text]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Send message error:", err);
+    res.status(500).json({ message: "Error sending message" });
+  }
+});
   return httpServer;
 }
