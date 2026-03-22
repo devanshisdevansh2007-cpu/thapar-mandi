@@ -21,7 +21,7 @@ export async function registerRoutes(
     next();
   }
 
-  // 🔒 BLOCK CHECK MIDDLEWARE
+  // 🔒 BLOCK CHECK
   function isNotBlocked(req: any, res: any, next: any) {
     if (req.user?.blocked) {
       return res.status(403).json({ message: "You are blocked" });
@@ -35,66 +35,66 @@ export async function registerRoutes(
     if (req.user!.blocked) {
       return res.status(403).json({ message: "You are blocked" });
     }
-    const { password, ...userWithoutPassword } = req.user!;
-    res.json(userWithoutPassword);
+    const { password, ...safeUser } = req.user!;
+    res.json(safeUser);
   });
-app.post("/auth/logout", (req, res) => {
-  req.logout(() => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Logout failed" });
-      }
 
-      res.clearCookie("connect.sid");
-      res.json({ message: "Logged out" });
+  app.post("/auth/logout", (req, res) => {
+    req.logout(() => {
+      req.session.destroy((err) => {
+        if (err) return res.status(500).json({ message: "Logout failed" });
+
+        res.clearCookie("connect.sid");
+        res.json({ message: "Logged out" });
+      });
     });
   });
-});
+
   app.get(api.auth.me.path, (req, res) => {
     if (!req.isAuthenticated())
       return res.status(401).json({ message: "Unauthorized" });
-    const { password, ...userWithoutPassword } = req.user!;
-    res.json(userWithoutPassword);
+
+    const { password, ...safeUser } = req.user!;
+    res.json(safeUser);
   });
 
   // ================= ITEMS =================
 
-  // 🔥 GET ALL ITEMS (SAFE + SEARCH)
-app.get(api.items.list.path, async (req, res) => {
-  const search = req.query.search as string | undefined;
-  const items = await storage.getItems(search);
+  // 🔥 GET ALL ITEMS
+  app.get(api.items.list.path, async (req, res) => {
+    const search = req.query.search as string | undefined;
+    const items = await storage.getItems(search);
 
-  const result = await Promise.all(
-    items.map(async (item) => {
-      const seller = await storage.getUser(item.sellerId);
+    const result = await Promise.all(
+      items.map(async (item) => {
+        const seller = await storage.getUser(item.sellerId);
 
-      // 🛑 IMPORTANT FIX
-      if (!seller) {
+        if (!seller) {
+          return { ...item, seller: null };
+        }
+
+        const { password, phoneNumber, ...safeSeller } = seller;
+
         return {
           ...item,
-          seller: null,
+          seller: safeSeller,
         };
-      }
+      })
+    );
 
-      const { password, phoneNumber, ...safeSeller } = seller;
+    res.json(result);
+  });
 
-      return {
-        ...item,
-        seller: safeSeller,
-      };
-    })
-  );
-
-  res.json(result);
-});
-
-  // 🔥 GET SINGLE ITEM (SAFE)
+  // 🔥 GET SINGLE ITEM
   app.get(api.items.get.path, async (req, res) => {
     const item = await storage.getItem(Number(req.params.id));
     if (!item) return res.status(404).json({ message: "Item not found" });
 
     const seller = await storage.getUser(item.sellerId);
-    const { password, phoneNumber, ...safeSeller } = seller!;
+
+    if (!seller) return res.json({ ...item, seller: null });
+
+    const { password, phoneNumber, ...safeSeller } = seller;
 
     res.json({ ...item, seller: safeSeller });
   });
@@ -131,19 +131,19 @@ app.get(api.items.list.path, async (req, res) => {
 
   // ================= ADMIN =================
 
-  // 🔥 DELETE ANY ITEM
+  // 🗑 DELETE ANY ITEM
   app.delete("/api/admin/item/:id", isAdmin, async (req, res) => {
     await storage.deleteItem(Number(req.params.id));
     res.json({ success: true });
   });
 
-  // 🔥 EDIT ANY ITEM
+  // ✏️ EDIT ANY ITEM
   app.put("/api/admin/item/:id", isAdmin, async (req, res) => {
     const updated = await storage.updateItem(Number(req.params.id), req.body);
     res.json(updated);
   });
 
-  // 🔥 BLOCK USER (NO SELF BLOCK)
+  // 🚫 BLOCK USER
   app.post("/api/admin/block-user/:id", isAdmin, async (req, res) => {
     const userId = Number(req.params.id);
 
@@ -155,7 +155,13 @@ app.get(api.items.list.path, async (req, res) => {
     res.json({ success: true });
   });
 
-  // 🔥 GET ALL USERS
+  // ✅ UNBLOCK USER (🔥 NEW)
+  app.post("/api/admin/unblock-user/:id", isAdmin, async (req, res) => {
+    await storage.updateUser(Number(req.params.id), { blocked: false });
+    res.json({ success: true });
+  });
+
+  // 👥 GET ALL USERS
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     const users = await storage.getAllUsers();
     res.json(users);
@@ -188,6 +194,7 @@ app.get(api.items.list.path, async (req, res) => {
        RETURNING *`,
       [itemId, buyerId, sellerId]
     );
+
     res.json(result.rows[0]);
   });
 
