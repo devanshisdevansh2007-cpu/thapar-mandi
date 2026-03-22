@@ -46,7 +46,7 @@ async function isNotBlocked(req: any, res: any, next: any) {
     return res.status(500).json({ message: "Server error" });
   }
 }
-  async function isUserBlocked(user1: number, user2: number) {
+  async function isUserBlocked(user1: string, user2: string){
     const result = await pool.query(
       `SELECT 1 FROM blocked_users 
        WHERE 
