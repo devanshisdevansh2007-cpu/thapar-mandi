@@ -3,17 +3,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Store, PlusCircle, Package, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 export function Dashboard() {
   const { user, isLoading } = useAuth();
+ const [, setLocation] = useLocation();
 
-if (isLoading) return null;
+  // 🔥 IMPORTANT: useEffect redirect (not inline)
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, isLoading]);
 
-if (!user) {
-  window.location.href = "/login";
-  return null;
-}
+  if (isLoading || !user) return null;
+
 const [hostel, setHostel] = useState(user?.hostel || "");
   const updateHostel = async () => {
   await fetch("/api/user/hostel", {
