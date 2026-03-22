@@ -51,16 +51,35 @@ export async function registerRoutes(
   });
 
   app.get(api.auth.me.path, (req, res) => {
-    if (!req.isAuthenticated())
+    if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
+    }
 
     const { password, ...safeUser } = req.user!;
     res.json(safeUser);
   });
 
+  // ================= USER =================
+
+  // 🔥 FIXED: UPDATE HOSTEL (THIS WAS YOUR BUG)
+  app.put("/api/user/hostel", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { hostel } = req.body;
+
+    if (!hostel) {
+      return res.status(400).json({ message: "Hostel required" });
+    }
+
+    await storage.updateUser(req.user!.id, { hostel });
+
+    res.json({ success: true });
+  });
+
   // ================= ITEMS =================
 
-  // 🔥 GET ALL ITEMS
   app.get(api.items.list.path, async (req, res) => {
     const search = req.query.search as string | undefined;
     const items = await storage.getItems(search);
@@ -69,23 +88,17 @@ export async function registerRoutes(
       items.map(async (item) => {
         const seller = await storage.getUser(item.sellerId);
 
-        if (!seller) {
-          return { ...item, seller: null };
-        }
+        if (!seller) return { ...item, seller: null };
 
         const { password, phoneNumber, ...safeSeller } = seller;
 
-        return {
-          ...item,
-          seller: safeSeller,
-        };
+        return { ...item, seller: safeSeller };
       })
     );
 
     res.json(result);
   });
 
-  // 🔥 GET SINGLE ITEM
   app.get(api.items.get.path, async (req, res) => {
     const item = await storage.getItem(Number(req.params.id));
     if (!item) return res.status(404).json({ message: "Item not found" });
@@ -99,7 +112,6 @@ export async function registerRoutes(
     res.json({ ...item, seller: safeSeller });
   });
 
-  // 🔥 CREATE ITEM
   app.post(api.items.create.path, isNotBlocked, async (req, res) => {
     if (!req.isAuthenticated())
       return res.status(401).json({ message: "Unauthorized" });
@@ -114,7 +126,6 @@ export async function registerRoutes(
     res.json(item);
   });
 
-  // 🔥 DELETE OWN ITEM
   app.delete(api.items.delete.path, isNotBlocked, async (req, res) => {
     if (!req.isAuthenticated())
       return res.status(401).json({ message: "Unauthorized" });
@@ -131,19 +142,16 @@ export async function registerRoutes(
 
   // ================= ADMIN =================
 
-  // 🗑 DELETE ANY ITEM
   app.delete("/api/admin/item/:id", isAdmin, async (req, res) => {
     await storage.deleteItem(Number(req.params.id));
     res.json({ success: true });
   });
 
-  // ✏️ EDIT ANY ITEM
   app.put("/api/admin/item/:id", isAdmin, async (req, res) => {
     const updated = await storage.updateItem(Number(req.params.id), req.body);
     res.json(updated);
   });
 
-  // 🚫 BLOCK USER
   app.post("/api/admin/block-user/:id", isAdmin, async (req, res) => {
     const userId = Number(req.params.id);
 
@@ -155,13 +163,11 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  // ✅ UNBLOCK USER (🔥 NEW)
   app.post("/api/admin/unblock-user/:id", isAdmin, async (req, res) => {
     await storage.updateUser(Number(req.params.id), { blocked: false });
     res.json({ success: true });
   });
 
-  // 👥 GET ALL USERS
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     const users = await storage.getAllUsers();
     res.json(users);
