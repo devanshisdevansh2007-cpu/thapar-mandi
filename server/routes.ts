@@ -51,20 +51,38 @@ export async function registerRoutes(
     res.json(safeUser);
   });
 
-  app.post("/auth/logout", (req, res) => {
-    req.logout(() => {
-      req.session.destroy((err) => {
-        if (err) return res.status(500).json({ message: "Logout failed" });
-        res.clearCookie("connect.sid");
-        res.json({ message: "Logged out" });
+app.post("/auth/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Logout failed" });
+    }
+
+    // 🔥 Destroy session completely
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+        return res.status(500).json({ message: "Session destroy failed" });
+      }
+
+      // 🔥 VERY IMPORTANT (this is what usually breaks logout)
+      res.clearCookie("connect.sid", {
+        path: "/",
       });
+
+      return res.json({ message: "Logged out successfully" });
     });
   });
+});
 
   app.get(api.auth.me.path, (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json(null);
+  }
+
+  const { password, ...safeUser } = req.user!;
+  res.json(safeUser);
+});
     const { password, ...safeUser } = req.user!;
     res.json(safeUser);
   });
