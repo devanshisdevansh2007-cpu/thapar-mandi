@@ -59,7 +59,19 @@ async function isNotBlocked(req: any, res: any, next: any) {
 
     return result.rows.length > 0;
   }
-
+app.use(async (req, res, next) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    try {
+      await pool.query(
+        `UPDATE users SET last_seen = NOW() WHERE id = $1`,
+        [req.user.id]
+      );
+    } catch (err) {
+      console.error("last_seen update failed:", err);
+    }
+  }
+  next();
+});
   // ================= AUTH =================
 
   app.post(api.auth.login.path, passport.authenticate("local"), (req, res) => {
@@ -321,14 +333,20 @@ app.get("/api/chat", async (req, res) => {
 
   const userId = req.user!.id;
 
-  const result = await pool.query(
+ const result = await pool.query(
   `SELECT 
     chats.id,
     items.title AS item_title,
     users.name AS other_user,
 
+    -- ✅ ADD THIS
     (
-      SELECT message FROM messages  -- ✅ FIXED HERE
+      users.last_seen > NOW() - INTERVAL '2 minutes'
+    ) AS is_online,
+
+    (
+      SELECT message
+      FROM messages
       WHERE chat_id = chats.id 
       ORDER BY created_at DESC 
       LIMIT 1
