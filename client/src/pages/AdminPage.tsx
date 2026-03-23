@@ -142,6 +142,57 @@ export default function AdminPage() {
       ))}
 
       {/* ================= REPORTS ================= */}
+
+<h2 className="text-2xl font-bold mt-8 mb-4">🚨 Reports</h2>
+
+{reports.length === 0 && (
+  <p className="text-gray-500">No reports yet</p>
+)}
+
+<div className="grid gap-4">
+  {reports.map((r) => (
+    <div
+      key={r.id}
+      className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition"
+    >
+      {/* Top row */}
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm text-red-500 font-semibold">
+          Report #{r.id}
+        </span>
+        <span className="text-xs text-gray-400">
+          Item ID: {r.reported_item_id}
+        </span>
+      </div>
+
+      {/* Reason */}
+      <p className="text-gray-800 mb-3">
+        <span className="font-semibold">Reason:</span> {r.reason}
+      </p>
+
+      {/* Meta info */}
+      <div className="text-xs text-gray-500 mb-3">
+        <p>👤 Reporter: {r.reporter_id}</p>
+        <p>⚠️ Reported User: {r.reported_user_id}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+          🗑 Delete Item
+        </button>
+
+        <button className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600">
+          🚫 Ban User
+        </button>
+
+        <button className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+          ✅ Resolve
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
       <h2 className="text-xl font-bold mt-6 mb-2">🚨 Reports</h2>
 
       {reports.length === 0 && <p>No reports yet</p>}
