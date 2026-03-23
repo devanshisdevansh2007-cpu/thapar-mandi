@@ -41,6 +41,7 @@ const chats = await chatRes.json();
 const currentChat = chats.find((c: any) => String(c.id) === String(chatId));
 if (currentChat) {
   setOtherUser(currentChat.other_user);
+  setIsOnline(currentChat.is_online); // ✅ ADD THIS
 }
     setMessages(data.messages || data);
     setProduct(data.product || null);
@@ -110,9 +111,7 @@ if (currentChat) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  const isOnline =
-    product?.last_seen &&
-    new Date().getTime() - new Date(product.last_seen).getTime() < 2 * 60 * 1000;
+  const [isOnline, setIsOnline] = useState(false);
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -130,12 +129,8 @@ if (currentChat) {
             </span>
 
             <span className="text-xs text-gray-500">
-              {isOnline
-                ? "🟢 Online"
-                : product?.last_seen
-                ? `Last seen ${formatTime(product.last_seen)}`
-                : "Offline"}
-            </span>
+  {isOnline ? "🟢 Online" : "⚫ Offline"}
+</span>
           </div>
         </div>
 
