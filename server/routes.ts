@@ -241,7 +241,26 @@ app.delete("/api/admin/item/:id", isAdmin, async (req, res) => {
     await storage.deleteItem(id);
     res.json({ success: true });
   });
+app.get("/api/my-listings", async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
+  try {
+    const userId = req.user!.id;
+
+    const items = await pool.query(
+      `SELECT * FROM items WHERE seller_id = $1 ORDER BY id DESC`,
+      [userId]
+    );
+
+    res.json(items.rows);
+
+  } catch (err) {
+    console.error("MY LISTINGS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
   // ================= USER BLOCK =================
 
   app.post("/api/block/:id", async (req, res) => {
