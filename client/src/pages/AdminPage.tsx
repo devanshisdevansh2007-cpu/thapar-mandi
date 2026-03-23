@@ -3,23 +3,26 @@ import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminPage() {
   const { user } = useAuth();
+
   const [items, setItems] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
 
   // 🔥 FETCH DATA
   useEffect(() => {
     fetch("/api/items", { credentials: "include" })
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setItems(data);
-        else setItems([]);
-      });
+      .then(data => setItems(Array.isArray(data) ? data : []));
 
     fetch("/api/admin/users", { credentials: "include" })
       .then(res => res.json())
+      .then(data => setUsers(Array.isArray(data) ? data : []));
+
+    fetch("/api/reports", { credentials: "include" })
+      .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setUsers(data);
-        else setUsers([]);
+        console.log("REPORTS:", data);
+        setReports(Array.isArray(data) ? data : []);
       });
   }, []);
 
@@ -135,6 +138,20 @@ export default function AdminPage() {
               </button>
             )}
           </div>
+        </div>
+      ))}
+
+      {/* ================= REPORTS ================= */}
+      <h2 className="text-xl font-bold mt-6 mb-2">🚨 Reports</h2>
+
+      {reports.length === 0 && <p>No reports yet</p>}
+
+      {reports.map(r => (
+        <div key={r.id} className="border p-3 mb-2 rounded">
+          <p><b>Reason:</b> {r.reason}</p>
+          <p><b>Item ID:</b> {r.reported_item_id}</p>
+          <p><b>Reported User:</b> {r.reported_user_id}</p>
+          <p><b>Reporter:</b> {r.reporter_id}</p>
         </div>
       ))}
     </div>
