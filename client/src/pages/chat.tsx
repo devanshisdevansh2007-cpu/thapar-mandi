@@ -117,7 +117,7 @@ if (currentChat) {
     <div className="max-w-2xl mx-auto p-4">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-3 border-b pb-3">
+      <div className="flex items-center justify-between mb-3 border-b border-border pb-3  ">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-400 text-white flex items-center justify-center font-bold">
            {otherUser?.[0]?.toUpperCase() || "U"}
@@ -128,7 +128,7 @@ if (currentChat) {
               {otherUser}
             </span>
 
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
   {isOnline ? "🟢 Online" : "⚫ Offline"}
 </span>
           </div>
@@ -167,7 +167,7 @@ if (currentChat) {
 
       {/* PRODUCT */}
       {product && (
-        <div className="flex items-center gap-3 border rounded-lg p-3 mb-3 bg-white shadow-sm">
+        <div className="flex items-center gap-3 border border-border rounded-lg p-3 mb-3 bg-card shadow-sm">
           <img
             src={product.image}
             alt="product"
@@ -176,7 +176,7 @@ if (currentChat) {
 
           <div className="flex-1">
             <p className="text-sm font-semibold">{product.title}</p>
-            <p className="text-xs text-gray-500">₹{product.price}</p>
+            <p className="text-xs text-muted-foreground">₹{product.price}</p>
           </div>
 
           <Link href={`/item/${product.id}`}>
@@ -190,7 +190,7 @@ if (currentChat) {
       {/* MESSAGES */}
       <div
         id="chat-container"
-        className="border rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
+        className="border border-border bg-background rounded-lg p-4 h-[400px] overflow-y-auto mb-4 flex flex-col gap-2"
       >
         {messages.map((msg, index) => {
           const isMine = msg.sender_id === user?.id;
@@ -206,7 +206,7 @@ if (currentChat) {
           return (
             <div key={msg.id + "-wrapper"}>
               {showDate && (
-                <div className="text-center text-xs text-gray-500 my-2">
+                <div className="text-center text-xs text-muted-foreground my-2">
                   ─── {currentDate} ───
                 </div>
               )}
@@ -215,9 +215,9 @@ if (currentChat) {
                 <div
                   className={`relative max-w-xs px-4 py-2 rounded-2xl text-sm shadow
                   ${
-                    isMine
-                      ? "bg-orange-500 text-white rounded-br-none"
-                      : "bg-gray-200 text-black rounded-bl-none"
+                   isMine
+  ? "bg-primary text-primary-foreground"
+  : "bg-muted text-foreground"
                   }`}
                 >
                   {msg.message}
@@ -245,13 +245,13 @@ if (currentChat) {
             onKeyDown={(e) => {
               if (e.key === "Enter") sendMessage();
             }}
-            className="flex-1 border rounded px-3 py-2"
+            className="flex-1 bg-input border border-border text-foreground rounded px-3 py-2"
             placeholder="Type a message..."
           />
 
           <button
             onClick={sendMessage}
-            className="bg-primary text-white px-4 py-2 rounded"
+            className="bg-primary text-primary-foreground px-4 py-2 rounded"
           >
             Send
           </button>
