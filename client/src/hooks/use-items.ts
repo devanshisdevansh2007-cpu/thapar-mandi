@@ -23,12 +23,17 @@ export function useItems(search?: string) {
 
 export function useMyListings() {
   return useQuery({
-    queryKey: [api.items.myListings.path],
+    queryKey: ["my-listings"],
     queryFn: async () => {
-      const res = await fetch(api.items.myListings.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch your listings");
-      const data = await res.json();
-      return parseWithLogging(api.items.myListings.responses[200], data, "items.myListings");
+      const res = await fetch("/api/my-listings", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch your listings");
+      }
+
+      return res.json();
     },
   });
 }
