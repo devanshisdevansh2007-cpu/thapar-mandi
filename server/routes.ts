@@ -327,6 +327,38 @@ app.get("/api/my-listings", async (req, res) => {
     res.json({ blocked: result.rows.length > 0 });
   });
 
+  app.post("/api/reports", async (req, res) => {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { reported_user_id, reported_item_id, reason } = req.body;
+    const reporter_id = req.user.id;
+
+    if (!reason) {
+      return res.status(400).json({ error: "Reason is required" });
+    }
+
+    if (!reported_user_id && !reported_item_id) {
+      return res.status(400).json({ error: "Invalid target" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO reports (reporter_id, reported_user_id, reported_item_id, reason)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [reporter_id, reported_user_id || null, reported_item_id || null, reason]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("REPORT ERROR:", err);
+    res.status(500).json({ error: "Failed to submit report" });
+  }
+});
+  
   // ================= CHAT =================
 app.get("/api/chat", async (req, res) => {
   if (!req.isAuthenticated()) return res.sendStatus(401);
