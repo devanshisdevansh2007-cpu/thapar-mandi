@@ -193,18 +193,7 @@ export default function AdminPage() {
     </div>
   ))}
 </div>
-      <h2 className="text-xl font-bold mt-6 mb-2">🚨 Reports</h2>
-
-      {reports.length === 0 && <p>No reports yet</p>}
-
-      {reports.map(r => (
-        <div key={r.id} className="border p-3 mb-2 rounded">
-          <p><b>Reason:</b> {r.reason}</p>
-          <p><b>Item ID:</b> {r.reported_item_id}</p>
-          <p><b>Reported User:</b> {r.reported_user_id}</p>
-          <p><b>Reporter:</b> {r.reporter_id}</p>
-        </div>
-      ))}
+  
     </div>
   );
 }
