@@ -334,6 +334,22 @@ app.post("/api/reports", async (req, res) => {
 
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Unauthorized" });
+
+      app.get("/api/admin/reports", isAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM reports ORDER BY id DESC`
+    );
+
+    console.log("REPORTS FETCHED:", result.rows);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("FETCH REPORTS ERROR:", err);
+    res.status(500).json({ error: "Failed to fetch reports" });
+  }
+});
     }
 
     const { reported_user_id, reported_item_id, reason } = req.body;
