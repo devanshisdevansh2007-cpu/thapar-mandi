@@ -327,8 +327,11 @@ app.get("/api/my-listings", async (req, res) => {
     res.json({ blocked: result.rows.length > 0 });
   });
 
-  app.post("/api/reports", async (req, res) => {
+app.post("/api/reports", async (req, res) => {
   try {
+    console.log("API HIT HOI");
+    console.log("BODY:", req.body);
+
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -341,23 +344,26 @@ app.get("/api/my-listings", async (req, res) => {
     }
 
     if (!reported_user_id && !reported_item_id) {
-      return res.status(400).json({ error: "Invalid target" });
+      return res.status(400).json({ error: "Invalid report" });
     }
 
-    const result = await pool.query(
+    // 🔥 INSERT HERE
+   const result = await pool.query(
       `INSERT INTO reports (reporter_id, reported_user_id, reported_item_id, reason)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+       VALUES ($1, $2, $3, $4) RETURNING *`,
       [reporter_id, reported_user_id || null, reported_item_id || null, reason]
     );
 
-    res.json(result.rows[0]);
+    console.log("INSERT SUCCESS:", result.rows[0]);
+
+    res.json({ success: true });
 
   } catch (err) {
     console.error("REPORT ERROR:", err);
-    res.status(500).json({ error: "Failed to submit report" });
+    res.status(500).json({ error: "Failed to create report" });
   }
 });
+ 
   
   // ================= CHAT =================
 app.get("/api/chat", async (req, res) => {
