@@ -338,6 +338,8 @@ app.post("/api/reports", async (req, res) => {
 
     const { reported_user_id, reported_item_id, reason } = req.body;
     const reporter_id = req.user.id;
+    const itemId = reported_item_id ? String(reported_item_id) : null;
+const userId = reported_user_id ? String(reported_user_id) : null;
 
     if (!reason) {
       return res.status(400).json({ error: "Reason is required" });
@@ -351,7 +353,7 @@ app.post("/api/reports", async (req, res) => {
    const result = await pool.query(
       `INSERT INTO reports (reporter_id, reported_user_id, reported_item_id, reason)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [reporter_id, reported_user_id || null, reported_item_id || null, reason]
+    [reporter_id, userId, itemId, reason]
     );
 
     console.log("INSERT SUCCESS:", result.rows[0]);
