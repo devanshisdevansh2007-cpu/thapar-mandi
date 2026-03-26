@@ -5,6 +5,7 @@ import { Store, PlusCircle, Package, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import CursorFollower from "@/components/CursorFollower";
 export function Dashboard() {
   const { user, isLoading } = useAuth();
  const [, setLocation] = useLocation();
@@ -59,6 +60,9 @@ const [hostel, setHostel] = useState(user?.hostel || "");
 
   return (
     <AppLayout>
+
+      <CursorFollower />   {/* ✅ YE LINE ADD KAR */}
+      
       <div className="max-w-4xl mx-auto space-y-12 py-8">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -139,3 +143,4 @@ const [hostel, setHostel] = useState(user?.hostel || "");
     </AppLayout>
   );
 }
+  
