@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 export default function CursorFollower() {
   const [isHovering, setIsHovering] = useState(false);
+  const [ripples, setRipples] = useState<
+  { x: number; y: number; id: number }[]
+>([]);
   const { x, y } = useCursor();
 
   const posRef = useRef({ x: 0, y: 0 });
@@ -67,7 +70,7 @@ useEffect(() => {
       const x = e.clientX - rect.left - rect.width / 2;
       const y = e.clientY - rect.top - rect.height / 2;
 
-      element.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+      element.style.transform = `translate(${x * 0.4}px, ${y * 0.4}px)`;
     };
 
     const handleLeaveMagnetic = () => {
@@ -102,6 +105,26 @@ useEffect(() => {
   };
 }, []);
 
+  useEffect(() => {
+  const handleClick = (e: MouseEvent) => {
+    const newRipple = {
+      x: e.clientX,
+      y: e.clientY,
+      id: Date.now(),
+    };
+
+    setRipples(prev => [...prev, newRipple]);
+
+    setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== newRipple.id));
+    }, 600);
+  };
+
+  window.addEventListener("click", handleClick);
+
+  return () => window.removeEventListener("click", handleClick);
+}, []);
+
   return (
     <>
       {dots.map((dot, i) => (
@@ -111,14 +134,16 @@ useEffect(() => {
             position: "fixed",
             left: dot.x,
             top: dot.y,
-           transform: `translate(-50%, -50%) scale(${isHovering && i === 0 ? 2 : 1})`,
-transition: "transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)",
+          transform: `translate(-50%, -50%) 
+  scale(${isHovering && i === 0 ? 2.2 : 1}) 
+  scaleX(${isHovering && i === 0 ? 1.3 : 1}) 
+  scaleY(${isHovering && i === 0 ? 0.8 : 1})`,
             pointerEvents: "none",
             zIndex: 9999,
             opacity: 1 - i * 0.15,
             boxShadow: isHovering && i === 0
-  ? "0 0 30px rgba(255, 200, 100, 0.5)"
-  : "none",
+  ? "0 0 80px rgba(255, 200, 100, 0.9)"
+  : "0 0 20px rgba(255, 120, 220, 0.2)",
           }}
         >
           <div
@@ -131,10 +156,35 @@ transition: "transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)",
   : "linear-gradient(135deg, #ff70a6, #c77dff)",
       
               filter: "blur(16px)",
+              mixBlendMode: "screen",
             }}
           />
         </div>
       ))}
+
+      {ripples.map(r => (
+  <div
+    key={r.id}
+    style={{
+      position: "fixed",
+      left: r.x,
+      top: r.y,
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        width: "20px",
+        height: "20px",
+        borderRadius: "50%",
+        background: "rgba(255, 200, 100, 0.8)",
+        animation: "ripple 0.6s ease-out",
+      }}
+    />
+  </div>
+))}
     </>
   );
 }
