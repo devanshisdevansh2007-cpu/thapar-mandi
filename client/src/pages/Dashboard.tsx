@@ -36,8 +36,8 @@ const [hostel, setHostel] = useState(user?.hostel || "");
       description: "Find books, cycles, and more",
       icon: Store,
       href: "/marketplace",
-      color: "bg-white/40",
-      textColor: "text-primary"
+      color: "bg-white/40 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-900 dark:border dark:border-zinc-700",
+      textColor: "text-primary dark:text-orange-400"
     },
     {
       title: "Sell an Item",
@@ -121,12 +121,12 @@ const [hostel, setHostel] = useState(user?.hostel || "");
               transition={{ delay: i * 0.1 }}
             >
               <Link href={action.href} className="block h-full">
-                <div className={`h-full p-8 rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl shadow-lg ${action.color} group relative overflow-hidden`}>
+             <div className={`h-full p-8 rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-zinc-800/50 shadow-lg ${action.color} group relative overflow-hidden`}>
                   <action.icon className={`w-10 h-10 mb-6 ${action.textColor}`} />
                   <h3 className={`text-xl font-bold font-display mb-2 ${action.textColor}`}>
                     {action.title}
                   </h3>
-                  <p className={`${action.textColor} opacity-80 font-medium`}>
+                  <p className={`font-medium text-gray-700 dark:text-gray-300`}>
                     {action.description}
                   </p>
                   <ArrowRight className={`absolute bottom-8 right-8 w-6 h-6 ${action.textColor} opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300`} />
