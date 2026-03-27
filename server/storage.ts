@@ -4,7 +4,7 @@ import { eq, desc, ilike } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-
+import { or } from "drizzle-orm"; // 🔥 ADD THIS
 const PostgresStore = connectPg(session);
 
 export interface IStorage {
@@ -99,11 +99,23 @@ async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefine
   }
 
   async getItems(search?: string): Promise<Item[]> {
-    if (search) {
-      return await db.select().from(items).where(ilike(items.title, `%${search}%`)).orderBy(desc(items.createdAt));
-    }
-    return await db.select().from(items).orderBy(desc(items.createdAt));
+  if (search) {
+    return await db
+      .select()
+      .from(items)
+      .where(
+        or(
+          ilike(items.title, `%${search}%`),
+          ilike(items.description, `%${search}%`)
+          // 👉 add category if exists:
+          // ilike(items.category, `%${search}%`)
+        )
+      )
+      .orderBy(desc(items.createdAt));
   }
+
+  return await db.select().from(items).orderBy(desc(items.createdAt));
+}
 
   async getItemsBySeller(sellerId: number): Promise<Item[]> {
     return await db.select().from(items).where(eq(items.sellerId, sellerId)).orderBy(desc(items.createdAt));
