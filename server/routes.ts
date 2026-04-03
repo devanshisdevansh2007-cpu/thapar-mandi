@@ -81,7 +81,54 @@ app.use(async (req, res, next) => {
     const { password, ...safeUser } = req.user!;
     res.json(safeUser);
   });
+  app.post(api.auth.signup.path, async (req, res) => {
+  try {
+    const input = api.auth.signup.input.parse(req.body);
 
+    // 🔥 VERIFY OTP FIRST
+    const otpValid = await verifyOTP(input.email, input.otp); // you must implement this
+
+    if (!otpValid) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    const user = await storage.createUser(input);
+
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Login after signup failed" });
+      }
+
+      const { password, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    });
+
+  } catch (err: any) {
+    console.error("Signup error:", err);
+    res.status(400).json({ message: err.message || "Signup failed" });
+  }
+});  
+app.post(api.auth.signup.path, async (req, res) => {
+  try {
+    const input = api.auth.signup.input.parse(req.body);
+
+    const user = await storage.createUser(input);
+
+    // auto login after signup (important)
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Login after signup failed" });
+      }
+
+      const { password, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    });
+
+  } catch (err: any) {
+    console.error("Signup error:", err);
+    res.status(400).json({ message: err.message || "Signup failed" });
+  }
+});
 app.post("/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) {
