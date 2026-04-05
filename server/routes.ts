@@ -9,6 +9,7 @@ import { verifyOTP, saveOTP } from "./otpStore";
 import { generateOTP } from "./otp";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { sendOTPEmail } from "./email";
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
@@ -126,7 +127,33 @@ app.use(async (req, res, next) => {
   }
 });
 
-   
+     app.post("/api/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email required" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    console.log("Generating OTP for:", email);
+
+    // store OTP
+    saveOTP(email, otp);
+
+    // send email
+    await sendOTPEmail(email, otp);
+
+    console.log("OTP sent successfully");
+
+    res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error("OTP ERROR:", error);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
+       });
 
 app.post("/auth/logout", (req, res) => {
   req.logout((err) => {
@@ -317,29 +344,7 @@ app.post("/api/admin/reports/:id/resolve", isAdmin, async (req, res) => {
     await storage.deleteItem(id);
     res.json({ success: true });
   });
-  app.post("/auth/send-otp", async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ message: "Email required" });
-    }
-
-    const otp = generateOTP();   // 🔥 generate
-    saveOTP(email, otp);         // 🔥 STORE HERE
-
-    console.log("OTP:", otp); // debug (baad me hata dena)
-
-    // 👉 yahan email bhejna hai (Resend etc)
-    // await sendEmail(email, otp);
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("SEND OTP ERROR:", err);
-    res.status(500).json({ message: "Failed to send OTP" });
-  }
-});
+  
 app.get("/api/my-listings", async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
