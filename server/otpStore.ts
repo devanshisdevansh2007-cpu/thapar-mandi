@@ -22,7 +22,7 @@ export function verifyOTP(email: string, otp: string) {
     return false;
   }
 
-  if (record.otp === otp) {
+  if (record.otp === otp.trim()) {
     otpStore.delete(email);
     return true;
   }
