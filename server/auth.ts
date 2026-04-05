@@ -104,33 +104,7 @@ app.post("/auth/forgot-password", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-  app.post("/api/send-otp", async (req, res) => {
-  try {
-    const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email required" });
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    console.log("Generating OTP for:", email);
-
-    // store OTP
-    saveOTP(email, otp);
-
-    // send email
-    await sendOTPEmail(email, otp);
-
-    console.log("OTP sent successfully");
-
-    res.status(200).json({ success: true });
-
-  } catch (error) {
-    console.error("OTP ERROR:", error);
-    res.status(500).json({ error: "Failed to send OTP" });
-  }
-});
   app.post("/auth/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { newPassword } = req.body;
