@@ -7,6 +7,8 @@ import passport from "passport";
 import { pool } from "./db";
 import { verifyOTP, saveOTP } from "./otpStore";
 import { generateOTP } from "./otp";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
@@ -47,6 +49,14 @@ async function isNotBlocked(req: any, res: any, next: any) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+  const scryptAsync = promisify(scrypt);
+
+// helper
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
   async function isUserBlocked(user1: string, user2: string){
     const result = await pool.query(
       `SELECT 1 FROM blocked_users 
@@ -86,14 +96,20 @@ app.use(async (req, res, next) => {
   try {
     const input = api.auth.signup.input.parse(req.body);
 
-    // 🔥 VERIFY OTP FIRST
-    const otpValid = await verifyOTP(input.email, input.otp); // you must implement this
+    const otpValid = await verifyOTP(input.email, input.otp);
 
     if (!otpValid) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    const user = await storage.createUser(input);
+    // ✅ ADD THIS
+    const hashedPassword = await hashPassword(input.password);
+
+    const user = await storage.createUser({
+      ...input,
+      password: hashedPassword, // ✅ FIX
+      role: "user",             // ✅ FIX
+    });
 
     req.login(user, (err) => {
       if (err) {
@@ -108,7 +124,9 @@ app.use(async (req, res, next) => {
     console.error("Signup error:", err);
     res.status(400).json({ message: err.message || "Signup failed" });
   }
-});  
+});
+
+   
 
 app.post("/auth/logout", (req, res) => {
   req.logout((err) => {
@@ -135,7 +153,7 @@ app.post("/auth/logout", (req, res) => {
 });
 
   app.get(api.auth.me.path, (req, res) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
+ if (!req.isAuthenticated()) {
     return res.status(401).json(null);
   }
 
