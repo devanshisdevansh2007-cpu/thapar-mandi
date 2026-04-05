@@ -24,7 +24,7 @@ export default function ForgotPassword() {
       <input
         type="email"
         placeholder="Enter email"
-        className="border p-2 rounded w-64"
+        className="glass-input p-2 rounded w-64"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
