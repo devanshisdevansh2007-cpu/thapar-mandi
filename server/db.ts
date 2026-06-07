@@ -17,4 +17,7 @@ export const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
+pool.query("SELECT NOW()")
+  .then(() => console.log("DATABASE CONNECTED"))
+  .catch(err => console.error("DATABASE FAILED", err));
 export const db = drizzle(pool, { schema });
